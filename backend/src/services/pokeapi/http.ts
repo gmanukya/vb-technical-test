@@ -10,20 +10,16 @@ const requests = new Map<string, Promise<unknown>>()
  * A failed request is dropped so the next call can try again.
  */
 export function cachedGet<T>(url: string): Promise<T> {
-	const existing = requests.get(url)
-
-	if (existing) {
-		return existing as Promise<T>
-	}
-
-	const pending = axios.get<T>(url).then(response => response.data).catch(error => {
-		requests.delete(url)
-		throw error
+	return remember(requests as Map<string, Promise<T>>, url, () => {
+		return axios.get<T>(url).then((response) => {
+			return response.data
+		})
 	})
+}
 
-	requests.set(url, pending)
-
-	return pending
+/** Numeric id at the end of a PokeAPI resource URL. */
+export function idFromUrl(url: string): number {
+	return Number(url.split('/').filter(Boolean).pop())
 }
 
 /**
@@ -43,6 +39,6 @@ export function remember<K, V>(cache: Map<K, Promise<V>>, key: K, load: () => Pr
 	})
 
 	cache.set(key, pending)
-	
+
 	return pending
 }

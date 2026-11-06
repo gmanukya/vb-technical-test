@@ -1,5 +1,1 @@
-To install and launch: 
-
-npm install 
-npm run dev
-
+Setup and the API are in the [project README](../README.md).

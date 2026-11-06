@@ -96,7 +96,7 @@ Search is case-insensitive. Type chips add up: Fire and Electric together show P
 | --- | --- | --- |
 | GET | `/ping` | `pong` |
 | GET | `/pokemons` | `{ pokemons }` summaries for ids 1–898: name, image, types, HP, Attack, Defense, Speed |
-| GET | `/pokemons/:id` | `{ pokemon }` full record used for Markdown |
+| GET | `/pokemons/:id` | `{ pokemon }` record the Markdown file is built from |
 | GET | `/contents/:pokemonId` | One Markdown file, downloaded as `025-pikachu.md` |
 | GET | `/contents/all` | Writes all 898 files and returns `{ dir, written, failed }` |
 | POST | `/battles` | Body `{ "pokemonIds": [1, 4] }`. Chunked `text/plain` battle |

@@ -2,6 +2,7 @@ import { type Request, type Response, Router } from 'express'
 import { parsePokemonId } from '../parsePokemonId'
 import { fetchPokemon, getPokemonList } from '../services/pokeapi'
 
+/** `GET /pokemons` returns the card list. `GET /pokemons/:id` returns one Markdown record. */
 const PokemonController = Router()
 
 PokemonController.get('/', async (_req: Request, res: Response) => {

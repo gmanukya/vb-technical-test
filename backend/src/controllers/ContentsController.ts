@@ -1,10 +1,11 @@
 import { type Request, type Response, Router } from 'express'
 import { config } from '../config'
 import { parsePokemonId } from '../parsePokemonId'
-import { exportAllPokemon } from '../services/exportMarkdown'
-import { markdownFilename, pokemonToMarkdown } from '../services/markdown'
+import { exportAllPokemon } from '../services/contents/exportMarkdown'
+import { markdownFilename, pokemonToMarkdown } from '../services/contents/markdown'
 import { fetchPokemon } from '../services/pokeapi'
 
+/** `GET /contents/all` writes the dex. `GET /contents/:pokemonId` downloads one file. */
 const ContentController = Router()
 
 /**

@@ -1,3 +1,4 @@
+/** Failure with an HTTP status. The error handler responds with `{ error: message }`. */
 export class HttpError extends Error {
 	readonly status: number
 

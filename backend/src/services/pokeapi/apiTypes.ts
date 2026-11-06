@@ -14,11 +14,21 @@ export interface ApiPokemon {
 	name: string
 	sprites: {
 		front_default: string | null
-		other?: { 'official-artwork'?: { front_default: string | null } }
+		other?: {
+			'official-artwork'?: { front_default: string | null }
+		}
 	}
-	stats: { base_stat: number, stat: NamedResource }[]
-	types: { slot: number, type: NamedResource }[]
-	abilities: { ability: NamedResource }[]
+	stats: {
+		base_stat: number,
+		stat: NamedResource
+	}[]
+	types: {
+		slot: number,
+		type: NamedResource
+	}[]
+	abilities: {
+		ability: NamedResource
+	}[]
 	species: NamedResource
 	moves: ApiPokemonMove[]
 }

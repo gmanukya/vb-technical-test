@@ -1,8 +1,4 @@
-export interface PokemonType {
-	name: string
-	image: string
-}
-
+/** The six base stats stored for Markdown. The card grid uses HP, Attack, Defense, and Speed. */
 export interface StatBlock {
 	HP: number
 	attack: number
@@ -12,6 +8,7 @@ export interface StatBlock {
 	speed: number
 }
 
+/** How a multiplier on the type chart is named in Markdown. */
 export type DamageRelation =
 	| 'neutral'
 	| 'resistant'
@@ -20,17 +17,14 @@ export type DamageRelation =
 	| 'twice_vulnerable'
 	| 'immune'
 
+/** How one attacking type lands on this Pokémon. */
 export interface Resistance {
 	name: string
 	damage_multiplier: number
 	damage_relation: DamageRelation
 }
 
-export interface Ability {
-	name: string
-	slug: string
-}
-
+/** The species this Pokémon evolves into. */
 export interface Evolution {
 	name: string
 	pokedexId: number
@@ -45,19 +39,15 @@ export interface PokemonSummary {
 	apiTypes: { name: string }[]
 }
 
-/** Full Pokémon stored for Markdown export, including the type chart and evolution line. */
+/** Record the Markdown file is built from: stats, type chart, abilities, and evolution line. */
 export interface Pokemon {
 	id: number
-	pokedexId: number
 	name: string
-	image: string
-	sprite: string
-	slug: string
 	stats: StatBlock
-	apiTypes: PokemonType[]
+	apiTypes: { name: string }[]
 	apiGeneration: number
 	apiResistances: Resistance[]
-	abilities: Ability[]
+	abilities: string[]
 	apiEvolutions: Evolution[]
 	apiPreEvolution: string | 'none'
 }

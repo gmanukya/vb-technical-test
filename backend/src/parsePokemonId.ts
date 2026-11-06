@@ -1,15 +1,16 @@
+import { assertDexId, LAST_DEX_ID } from './dex'
 import { HttpError } from './httpError'
 
-/** National-dex ids covered by this app: Bulbasaur (1) through Calyrex (898). */
+const MESSAGE = `Pokemon id must be an integer from 1 to ${LAST_DEX_ID}`
+
+/**
+ * Parse a route param as a national-dex id from Bulbasaur (1) through Calyrex (898).
+ * @throws {HttpError} 400 when `raw` is not an integer in that range.
+ */
 export function parsePokemonId(raw: string): number {
 	if (!/^\d+$/.test(raw)) {
-		throw new HttpError(400, 'Pokemon id must be an integer from 1 to 898')
+		throw new HttpError(400, MESSAGE)
 	}
 
-	const id = Number(raw)
-	if (id < 1 || id > 898) {
-		throw new HttpError(400, 'Pokemon id must be an integer from 1 to 898')
-	}
-
-	return id
+	return assertDexId(Number(raw), MESSAGE)
 }

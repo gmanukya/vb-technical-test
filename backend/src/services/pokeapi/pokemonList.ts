@@ -1,11 +1,11 @@
 import pLimit from 'p-limit'
-import type { PokemonSummary } from '../../types/pokemon'
+
 import type { ApiPokemon } from './apiTypes'
-import { artwork, baseStat } from './fetchPokemon'
+import { artwork, baseStat } from './fields'
 import { cachedGet, POKEAPI_URL, remember } from './http'
 
-const POKEMON_COUNT = 898
-const LIST_CONCURRENCY = 8
+import { LAST_DEX_ID, POKEAPI_CONCURRENCY } from '../../dex'
+import type { PokemonSummary } from '../../types/pokemon'
 
 const summaryCache = new Map<number, Promise<PokemonSummary>>()
 let listCache: Promise<PokemonSummary[]> | null = null
@@ -28,8 +28,12 @@ export function fetchPokemonSummary(id: number): Promise<PokemonSummary> {
 				speed: baseStat(pokemon, 'speed'),
 			},
 			apiTypes: [...pokemon.types]
-				.sort((a, b) => a.slot - b.slot)
-				.map(({ type }) => ({ name: type.name })),
+				.sort((a, b) => {
+					return a.slot - b.slot
+				})
+				.map(({ type }) => {
+					return { name: type.name }
+				}),
 		}
 	})
 }
@@ -40,9 +44,16 @@ export function fetchPokemonSummary(id: number): Promise<PokemonSummary> {
  */
 export function getPokemonList(): Promise<PokemonSummary[]> {
 	if (!listCache) {
-		const limit = pLimit(LIST_CONCURRENCY)
-		const ids = Array.from({ length: POKEMON_COUNT }, (_, index) => index + 1)
-		listCache = Promise.all(ids.map(id => limit(() => fetchPokemonSummary(id)))).catch(error => {
+		const limit = pLimit(POKEAPI_CONCURRENCY)
+		const ids = Array.from({ length: LAST_DEX_ID }, (_, index) => {
+			return index + 1
+		})
+		
+		listCache = Promise.all(ids.map((id) => {
+			return limit(() => {
+				return fetchPokemonSummary(id)
+			})
+		})).catch((error) => {
 			listCache = null
 			throw error
 		})

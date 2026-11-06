@@ -1,6 +1,8 @@
+import { postJson } from './http1'
+
 import { config } from '../../config'
 import { HttpError } from '../../httpError'
-import { postJson } from './http1'
+import { isRecord } from '../../isRecord'
 
 interface Access {
 	accessToken: string
@@ -14,7 +16,10 @@ const REFRESH_SKEW_MS = 60_000
 let access: Access | null = null
 let inflight: Promise<Access> | null = null
 
-/** Bearer token and chatbot id. The API key never leaves this process. */
+/**
+ * Bearer token and chatbot id. The API key never leaves this process.
+ * A token is reused until 60 seconds before expiry. Concurrent callers share one refresh.
+ */
 export function getChatbotAccess(): Promise<Access> {
 	if (!config.chatbotApiKey) {
 		return Promise.reject(new HttpError(500, 'Chatbot API key is not configured'))
@@ -26,7 +31,13 @@ export function getChatbotAccess(): Promise<Access> {
 
 	if (!inflight) {
 		const previous = access
-		inflight = (previous ? refreshOrExchange(previous) : exchange())
+		let refreshed: Promise<Access>
+		if (previous) {
+			refreshed = refreshOrExchange(previous)
+		} else {
+			refreshed = exchange()
+		}
+		inflight = refreshed
 			.then(next => {
 				access = next
 				return next
@@ -70,20 +81,24 @@ async function refresh(previous: Access): Promise<Access> {
 	return readAccess(response)
 }
 
+/** 401 and 403 mean the key was rejected. Any other failure, including a malformed body, is 502. */
 async function readAccess(response: Response): Promise<Access> {
 	if (response.status === 401 || response.status === 403) {
 		throw new HttpError(401, 'Chatbot API key was rejected')
 	}
+
 	if (!response.ok) {
 		throw new HttpError(502, 'Battle service is unavailable')
 	}
 
 	const body: unknown = await response.json()
+
 	if (!isRecord(body)) {
 		throw new HttpError(502, 'Battle service is unavailable')
 	}
 
 	const { accessToken, refreshToken, expiresIn, chatbotId } = body
+	
 	if (
 		typeof accessToken !== 'string'
 		|| typeof refreshToken !== 'string'
@@ -99,8 +114,4 @@ async function readAccess(response: Response): Promise<Access> {
 		chatbotId,
 		expiresAt: Date.now() + expiresIn * 1000,
 	}
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null
 }

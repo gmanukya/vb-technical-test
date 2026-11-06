@@ -14,14 +14,17 @@ export function postJson(
 	signal?: AbortSignal,
 ): Promise<Response> {
 	return new Promise((resolve, reject) => {
-		if (signal?.aborted) {
+		if (signal !== undefined && signal.aborted) {
 			reject(abortError())
 			return
 		}
 
 		const target = new URL(url)
 		const payload = Buffer.from(JSON.stringify(body))
-		const transport = target.protocol === 'http:' ? http : https
+		let transport: typeof http | typeof https = https
+		if (target.protocol === 'http:') {
+			transport = http
+		}
 		let settled = false
 
 		const req = transport.request(target, {
@@ -36,34 +39,58 @@ export function postJson(
 				return
 			}
 			settled = true
-			signal?.removeEventListener('abort', onAbort)
+			if (signal !== undefined) {
+				signal.removeEventListener('abort', onAbort)
+			}
 
 			const pairs: [string, string][] = []
 			for (const [key, value] of Object.entries(incoming.headers)) {
 				if (value === undefined) continue
-				for (const item of Array.isArray(value) ? value : [value]) {
+				let values: string[]
+				if (Array.isArray(value)) {
+					values = value
+				} else {
+					values = [value]
+				}
+				for (const item of values) {
 					pairs.push([key, item])
 				}
 			}
 
+			let status = 502
+			if (incoming.statusCode !== undefined) {
+				status = incoming.statusCode
+			}
 			resolve(new Response(Readable.toWeb(incoming) as ReadableStream<Uint8Array>, {
-				status: incoming.statusCode ?? 502,
+				status,
 				headers: pairs,
 			}))
 		})
 
 		const onAbort = () => {
 			req.destroy()
-			if (settled) return
+			
+			if (settled) {
+				return
+			}
+
 			settled = true
 			reject(abortError())
 		}
 
-		signal?.addEventListener('abort', onAbort, { once: true })
+		if (signal !== undefined) {
+			signal.addEventListener('abort', onAbort, { once: true })
+		}
+		
 		req.on('error', (error) => {
-			if (settled) return
+			if (settled) {
+				return
+			}
+
 			settled = true
-			signal?.removeEventListener('abort', onAbort)
+			if (signal !== undefined) {
+				signal.removeEventListener('abort', onAbort)
+			}
 			reject(error)
 		})
 
@@ -73,15 +100,26 @@ export function postJson(
 
 /** A dropped chatbot stream, not a cancel from our side. */
 export function isUpstreamStreamError(error: unknown): boolean {
-	if (!(error instanceof Error) || error.name === 'AbortError') return false
-	if (error.message === 'terminated') return true
+	if (!(error instanceof Error) || error.name === 'AbortError') {
+		return false
+	}
 
-	const code = 'code' in error ? error.code : undefined
+	if (error.message === 'terminated') {
+		return true
+	}
+
+	let code: unknown
+	if ('code' in error) {
+		code = error.code
+	}
 	if (code === 'ECONNRESET' || code === 'EPIPE' || code === 'ERR_HTTP2_STREAM_ERROR' || code === 'UND_ERR_SOCKET') {
 		return true
 	}
 
-	const cause = 'cause' in error ? error.cause : undefined
+	let cause: unknown
+	if ('cause' in error) {
+		cause = error.cause
+	}
 	return cause !== undefined && cause !== error && isUpstreamStreamError(cause)
 }
 
