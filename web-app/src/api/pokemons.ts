@@ -1,5 +1,6 @@
 import axios from 'axios'
-import type { Pokemon } from '../types/pokemon'
+
+import type { Pokemon } from '../shared/types/pokemon'
 import { API_URL } from './client'
 
 export async function fetchPokemonList(): Promise<Pokemon[]> {

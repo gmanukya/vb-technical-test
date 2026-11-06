@@ -25,4 +25,20 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['**/*.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ConditionalExpression',
+          message: 'Do not use ternaries in components. Use early returns, records, or a child component.',
+        },
+        {
+          selector: 'JSXExpressionContainer > LogicalExpression',
+          message: 'Do not put logical expressions in JSX. Extract a component that returns null.',
+        },
+      ],
+    },
+  },
 )
