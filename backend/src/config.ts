@@ -14,4 +14,5 @@ function readPort(): number {
 export const config = {
 	port: readPort(),
 	corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+	exportDir: process.env.EXPORT_DIR ?? './exports/pokemons',
 }

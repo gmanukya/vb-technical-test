@@ -57,8 +57,7 @@ export interface Pokemon {
 	apiTypes: PokemonType[]
 	apiGeneration: number
 	apiResistances: Resistance[]
-	resistanceModifyingAbilitiesForApi: Ability
+	abilities: Ability[]
 	apiEvolutions: Evolution[]
 	apiPreEvolution: string | 'none'
-	apiResistancesWithAbilities: Resistance[]
 }

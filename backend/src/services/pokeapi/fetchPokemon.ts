@@ -45,7 +45,6 @@ async function loadPokemon(id: number): Promise<Pokemon> {
 		.map(({ species: evolution }) => ({ name: evolution.name, pokedexId: idFromUrl(evolution.url) }))
 
 	const apiResistances = computeResistances(types)
-	const firstAbility = pokemon.abilities[0]?.ability
 
 	return {
 		id: pokemon.id,
@@ -68,9 +67,8 @@ async function loadPokemon(id: number): Promise<Pokemon> {
 		})),
 		apiGeneration: idFromUrl(species.generation.url),
 		apiResistances,
-		resistanceModifyingAbilitiesForApi: { name: firstAbility?.name ?? '', slug: firstAbility?.name ?? '' },
+		abilities: pokemon.abilities.map(({ ability }) => ({ name: ability.name, slug: ability.name })),
 		apiEvolutions,
 		apiPreEvolution: species.evolves_from_species?.name ?? 'none',
-		apiResistancesWithAbilities: apiResistances,
 	}
 }
