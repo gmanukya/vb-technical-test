@@ -72,8 +72,9 @@ BattleController.post('/', async (req: Request, res: Response) => {
 			throw error
 		}
 
+		// A finished body looks like a complete story. Drop the socket so the client shows an error.
 		if (!res.writableEnded) {
-			res.end()
+			res.destroy()
 		}
 	}
 })
