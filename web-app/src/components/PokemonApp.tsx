@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { filterPokemons } from '../filterPokemons'
+import { useBattleStream } from '../hooks/useBattleStream'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { usePokemonSelection } from '../hooks/usePokemonSelection'
 import { usePokemons } from '../hooks/usePokemons'
+import { BattleLog } from './BattleLog'
 import { Header } from './Header'
 import PokemonList from './PokemonList'
 import { SearchBar } from './SearchBar'
@@ -12,6 +14,7 @@ import { TypeFilters } from './TypeFilters'
 const PokemonApp = () => {
   const { pokemons, status, reload } = usePokemons()
   const selection = usePokemonSelection()
+  const battle = useBattleStream()
   const [query, setQuery] = useState('')
   const [types, setTypes] = useState<string[]>([])
   const debouncedQuery = useDebouncedValue(query, 200)
@@ -67,7 +70,7 @@ const PokemonApp = () => {
   }
 
   return (
-    <div className={`flex min-h-screen flex-col bg-amber-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 ${selected.length > 0 ? 'pb-28' : ''}`}>
+    <div className={`flex min-h-screen flex-col bg-amber-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 ${battle.status !== 'idle' ? 'pb-[50vh]' : selected.length > 0 ? 'pb-28' : ''}`}>
       <div className="sticky top-0 z-20 bg-amber-50 dark:bg-slate-900">
         <Header />
         <div className="flex flex-col gap-3 border-b border-amber-200 px-4 py-4 dark:border-slate-700">
@@ -93,7 +96,23 @@ const PokemonApp = () => {
         onClearFilters={clearFilters}
         filtersActive={filtersActive}
       />
-      <SelectionBar selected={selected} onRemove={selection.remove} onClear={selection.clear} />
+      {battle.status !== 'idle' && (
+        <BattleLog
+          text={battle.text}
+          status={battle.status}
+          error={battle.error}
+          onCancel={battle.cancel}
+          onClose={battle.close}
+          onRetry={battle.retry}
+        />
+      )}
+      <SelectionBar
+        selected={selected}
+        fighting={battle.status === 'streaming'}
+        onRemove={selection.remove}
+        onClear={selection.clear}
+        onFight={() => void battle.start(selection.selectedIds)}
+      />
     </div>
   )
 }

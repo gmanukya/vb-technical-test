@@ -3,11 +3,13 @@ import type { Pokemon } from '../types/pokemon'
 
 interface SelectionBarProps {
   selected: Pokemon[]
+  fighting: boolean
   onRemove: (id: number) => void
   onClear: () => void
+  onFight: () => void
 }
 
-export function SelectionBar({ selected, onRemove, onClear }: SelectionBarProps) {
+export function SelectionBar({ selected, fighting, onRemove, onClear, onFight }: SelectionBarProps) {
   if (selected.length === 0) {
     return null
   }
@@ -31,6 +33,16 @@ export function SelectionBar({ selected, onRemove, onClear }: SelectionBarProps)
               Remove {formatPokemonName(pokemon.name)}
             </button>
           ))}
+          {selected.length === 2 && (
+            <button
+              type="button"
+              onClick={onFight}
+              disabled={fighting}
+              className="rounded-full bg-slate-900 px-4 py-1 text-sm font-medium text-amber-50 disabled:opacity-60"
+            >
+              {fighting ? 'Fighting…' : 'Fight'}
+            </button>
+          )}
           <button type="button" onClick={onClear} className="rounded-full px-3 py-1 text-sm underline">
             Clear
           </button>

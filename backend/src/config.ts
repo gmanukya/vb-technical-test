@@ -15,4 +15,6 @@ export const config = {
 	port: readPort(),
 	corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
 	exportDir: process.env.EXPORT_DIR ?? './exports/pokemons',
+	chatbotApiUrl: process.env.VB_API_URL ?? 'https://chatbot-api.getvirtualbrain.com',
+	chatbotApiKey: process.env.VB_API_KEY ?? '',
 }
