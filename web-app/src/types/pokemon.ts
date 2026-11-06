@@ -1,6 +1,6 @@
 export interface PokemonType {
   name: string
-  image: string
+  image?: string
 }
 
 export interface StatBlock {

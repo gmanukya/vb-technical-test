@@ -1,48 +1,63 @@
-import { useCallback, useEffect, useState } from 'react'
-import axios from 'axios'
-import type { Pokemon } from '../types/pokemon'
-import PokemonList from './PokemonList'
+import { useMemo, useState } from 'react'
+import { filterPokemons } from '../filterPokemons'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { usePokemonSelection } from '../hooks/usePokemonSelection'
+import { usePokemons } from '../hooks/usePokemons'
 import { Header } from './Header'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002'
-
-type LoadStatus = 'loading' | 'error' | 'ready'
+import PokemonList from './PokemonList'
+import { SearchBar } from './SearchBar'
+import { SelectionBar } from './SelectionBar'
+import { TypeFilters } from './TypeFilters'
 
 const PokemonApp = () => {
-  const [pokemon, setPokemon] = useState<Pokemon | null>(null)
-  const [status, setStatus] = useState<LoadStatus>('loading')
+  const { pokemons, status, reload } = usePokemons()
+  const selection = usePokemonSelection()
+  const [query, setQuery] = useState('')
+  const [types, setTypes] = useState<string[]>([])
+  const debouncedQuery = useDebouncedValue(query, 200)
+  const searchQuery = query.trim() === '' ? '' : debouncedQuery
 
-  const loadPokemon = useCallback(async () => {
-    setStatus('loading')
-    try {
-      const response = await axios.get<{ pokemon: Pokemon }>(`${API_URL}/pokemons/1`)
-      setPokemon(response.data.pokemon)
-      setStatus('ready')
-    } catch {
-      setPokemon(null)
-      setStatus('error')
-    }
-  }, [])
+  const filtered = useMemo(
+    () => filterPokemons(pokemons, searchQuery, types),
+    [pokemons, searchQuery, types],
+  )
 
-  useEffect(() => {
-    void loadPokemon()
-  }, [loadPokemon])
+  const selected = useMemo(
+    () => selection.selectedIds.flatMap((id) => {
+      const pokemon = pokemons.find((candidate) => candidate.id === id)
+      return pokemon ? [pokemon] : []
+    }),
+    [pokemons, selection.selectedIds],
+  )
+
+  const filtersActive = query.trim().length > 0 || types.length > 0
+
+  const toggleType = (type: string) => {
+    setTypes((current) => (
+      current.includes(type) ? current.filter((selectedType) => selectedType !== type) : [...current, type]
+    ))
+  }
+
+  const clearFilters = () => {
+    setQuery('')
+    setTypes([])
+  }
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center h-screen bg-amber-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100">
-        <div className="text-lg text-center w-full">Loading Pokemons...</div>
+      <div className="flex h-screen items-center bg-amber-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100">
+        <div className="w-full text-center text-lg">Loading Pokemons...</div>
       </div>
     )
   }
 
-  if (status === 'error' || !pokemon) {
+  if (status === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 h-screen bg-amber-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100">
+      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-amber-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100">
         <p className="text-lg">Could not load Pokemon.</p>
         <button
           type="button"
-          onClick={() => void loadPokemon()}
+          onClick={() => void reload()}
           className="rounded-full bg-amber-400 px-4 py-2 text-slate-900"
         >
           Retry
@@ -52,9 +67,33 @@ const PokemonApp = () => {
   }
 
   return (
-    <div className="bg-amber-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 flex flex-col items-center min-h-screen">
-      <Header />
-      <PokemonList pokemons={[pokemon]} />
+    <div className={`flex min-h-screen flex-col bg-amber-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 ${selected.length > 0 ? 'pb-28' : ''}`}>
+      <div className="sticky top-0 z-20 bg-amber-50 dark:bg-slate-900">
+        <Header />
+        <div className="flex flex-col gap-3 border-b border-amber-200 px-4 py-4 dark:border-slate-700">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <SearchBar value={query} onChange={setQuery} />
+            <div className="flex items-center gap-3 text-sm">
+              <p aria-live="polite">{filtered.length} of {pokemons.length}</p>
+              {filtersActive && (
+                <button type="button" onClick={clearFilters} className="underline">
+                  Clear filters
+                </button>
+              )}
+            </div>
+          </div>
+          <TypeFilters selected={types} onToggle={toggleType} />
+        </div>
+      </div>
+      <PokemonList
+        pokemons={filtered}
+        selectedIds={selection.selectedIds}
+        selectionFull={selection.isFull}
+        onToggle={selection.toggle}
+        onClearFilters={clearFilters}
+        filtersActive={filtersActive}
+      />
+      <SelectionBar selected={selected} onRemove={selection.remove} onClear={selection.clear} />
     </div>
   )
 }
