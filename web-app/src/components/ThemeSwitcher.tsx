@@ -1,16 +1,18 @@
-import React from 'react';
-import { useTheme } from './ThemeContext';
-import { IoIosSunny } from "react-icons/io";
-import { IoIosMoon } from "react-icons/io";
+import { IoIosMoon, IoIosSunny } from 'react-icons/io'
+import { useTheme } from '../hooks/useTheme'
 
-const ThemeSwitcher: React.FC = () => {
-  const { theme, toggleTheme } = useTheme();
+const ThemeSwitcher = () => {
+  const { theme, toggleTheme } = useTheme()
+  const label = theme === 'light' ? 'Dark mode' : 'Light mode'
 
   return (
-    <button onClick={toggleTheme} className={`max-w-fit`}>
-      <div className='flex items-center'>{theme === 'light' ? <IoIosMoon/> : <IoIosSunny/>} {theme === 'light' ? 'dm' : 'lm'}</div>
+    <button type="button" onClick={toggleTheme} aria-label={label} className="max-w-fit">
+      <div className="flex items-center gap-2">
+        {theme === 'light' ? <IoIosMoon /> : <IoIosSunny />}
+        {label}
+      </div>
     </button>
-  );
-};
+  )
+}
 
-export default ThemeSwitcher;
+export default ThemeSwitcher

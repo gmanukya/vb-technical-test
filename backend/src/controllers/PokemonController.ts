@@ -1,73 +1,29 @@
 import { type Request, type Response, Router } from 'express'
+import { HttpError } from '../httpError'
 import { fetchPokemon } from '../services/pokeapi'
 
 const PokemonController = Router()
 
-export interface PokemonType {
-	name: string;
-	image: string;
+function parsePokemonId(raw: string): number {
+	if (!/^\d+$/.test(raw)) {
+		throw new HttpError(400, 'Pokemon id must be an integer from 1 to 898')
+	}
+
+	const id = Number(raw)
+	if (id < 1 || id > 898) {
+		throw new HttpError(400, 'Pokemon id must be an integer from 1 to 898')
+	}
+
+	return id
 }
-
-export interface StatBlock {
-	HP: number;
-	attack: number;
-	defense: number;
-	special_attack: number;
-	special_defense: number;
-	speed: number;
-}
-
-export type DamageRelation =
-	| "neutral"
-	| "resistant"
-	| "twice_resistant"
-	| "vulnerable"
-	| "twice_vulnerable"
-	| "immune";
-
-export interface Resistance {
-	name: string;
-	damage_multiplier: number;
-	damage_relation: DamageRelation;
-}
-
-export interface Ability {
-	name: string;
-	slug: string;
-}
-
-export interface Evolution {
-	name: string;
-	pokedexId: number;
-}
-
-export interface Pokemon {
-	id: number;
-	pokedexId: number;
-	name: string;
-	image: string;
-	sprite: string;
-	slug: string;
-	stats: StatBlock;
-	apiTypes: PokemonType[];
-	apiGeneration: number;
-	apiResistances: Resistance[];
-	resistanceModifyingAbilitiesForApi: Ability;
-	apiEvolutions: Evolution[];
-	apiPreEvolution: string | "none";
-	apiResistancesWithAbilities: Resistance[];
-}
-
 
 PokemonController.get(
 	'/:id',
 	async (req: Request, res: Response) => {
-		const { id } = req.params
-
-		console.log('coucou')
+		const id = parsePokemonId(req.params.id)
 		const pokemon = await fetchPokemon(id)
 
-		return res.status(200).send({pokemon})
+		return res.status(200).send({ pokemon })
 	}
 )
 

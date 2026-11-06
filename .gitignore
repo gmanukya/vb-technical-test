@@ -30,24 +30,8 @@ node_modules
 .env
 .env.scripts
 
-# Docker
-.docker
-
-# nixox
-.envrc
-.direnv
-.npm-global
-shell.nix
-
-# python
-__pycache__
-.venv
-
-# Next.js
-.next
-
-# NX
-.nx
+# Markdown export
+backend/exports/
 
 # Eslint
 .eslintcache

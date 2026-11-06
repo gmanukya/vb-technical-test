@@ -1,40 +1,28 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react'
+import { persistTheme, readInitialTheme, ThemeContext, type Theme } from '../theme'
 
-type Theme = 'light' | 'dark';
-
-interface ThemeContextType {
-  theme: Theme;
-  toggleTheme: () => void;
-}
-
-// Create the context with a default value
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-// Provider component props
 interface ThemeProviderProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
-// Create the provider component
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>('light');
+export const ThemeProvider = ({ children }: ThemeProviderProps) => {
+  const [theme, setTheme] = useState<Theme>(() => {
+    const initial = readInitialTheme()
+    document.documentElement.classList.toggle('dark', initial === 'dark')
+    return initial
+  })
+
+  useEffect(() => {
+    persistTheme(theme)
+  }, [theme])
 
   const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
-  };
+    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'))
+  }
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
-  );
-};
-
-// Custom hook for consuming the context
-export const useTheme = (): ThemeContextType => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
-};
+  )
+}

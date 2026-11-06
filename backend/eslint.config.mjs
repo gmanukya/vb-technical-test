@@ -1,22 +1,21 @@
-import { defineConfig } from "eslint/config";
-import mainConfig from "../../eslint.config.mjs";
+import js from '@eslint/js'
+import globals from 'globals'
+import tseslint from 'typescript-eslint'
 
-export default defineConfig([
-	mainConfig,
+export default tseslint.config(
+	{ ignores: ['dist'] },
 	{
-		files: ["./**/*.ts", "./**/*.tsx"],
-
+		extends: [js.configs.recommended, ...tseslint.configs.recommended],
+		files: ['**/*.ts'],
 		languageOptions: {
-			ecmaVersion: 12,
-			sourceType: "module",
-
-			parserOptions: {
-				ecmaFeatures: {
-					jsx: true,
-				},
-
-				project: ["apps/api/tsconfig.*?.json"],
-			},
+			ecmaVersion: 2022,
+			globals: globals.node,
 		},
-	}
-]);
+		rules: {
+			'@typescript-eslint/no-unused-vars': ['error', {
+				argsIgnorePattern: '^_',
+				varsIgnorePattern: '^_',
+			}],
+		},
+	},
+)

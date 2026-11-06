@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { DamageRelation, Evolution, Pokemon, Resistance } from '../controllers/PokemonController'
+import type { DamageRelation, Evolution, Pokemon, Resistance } from '../types/pokemon'
 
 const POKEAPI_URL = 'https://pokeapi.co/api/v2'
 
@@ -28,7 +28,11 @@ interface ApiType {
 		half_damage_from: NamedResource[]
 		no_damage_from: NamedResource[]
 	}
-	sprites: { 'generation-viii': { 'sword-shield': { name_icon: string | null } } }
+	sprites?: {
+		'generation-viii'?: {
+			'sword-shield'?: { name_icon: string | null }
+		}
+	}
 }
 
 interface ApiSpecies {
@@ -77,7 +81,11 @@ const computeResistances = (types: ApiType[]): Resistance[] =>
 			return multiplier
 		}, 1)
 
-		return { name: attacker, damage_multiplier, damage_relation: DAMAGE_RELATIONS[damage_multiplier] }
+		return {
+			name: attacker,
+			damage_multiplier,
+			damage_relation: DAMAGE_RELATIONS[damage_multiplier] ?? 'neutral',
+		}
 	})
 
 const findChainLink = (link: ApiChainLink, speciesName: string): ApiChainLink | undefined =>
@@ -88,7 +96,7 @@ const findChainLink = (link: ApiChainLink, speciesName: string): ApiChainLink | 
 /**
  * Fetch a pokemon from PokeAPI and adapt it to the legacy pokebuildapi `Pokemon` shape
  */
-export async function fetchPokemon(id: string): Promise<Pokemon> {
+export async function fetchPokemon(id: number): Promise<Pokemon> {
 	const { data: pokemon } = await axios.get<ApiPokemon>(`${POKEAPI_URL}/pokemon/${id}`)
 
 	const [types, { data: species }] = await Promise.all([
@@ -125,7 +133,7 @@ export async function fetchPokemon(id: string): Promise<Pokemon> {
 		},
 		apiTypes: types.map(type => ({
 			name: type.name,
-			image: type.sprites['generation-viii']['sword-shield'].name_icon ?? ''
+			image: type.sprites?.['generation-viii']?.['sword-shield']?.name_icon ?? ''
 		})),
 		apiGeneration: idFromUrl(species.generation.url),
 		apiResistances,
