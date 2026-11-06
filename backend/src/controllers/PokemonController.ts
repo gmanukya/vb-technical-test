@@ -1,6 +1,6 @@
 import { type Request, type Response, Router } from 'express'
 import { HttpError } from '../httpError'
-import { fetchPokemon } from '../services/pokeapi'
+import { fetchPokemon, getPokemonList } from '../services/pokeapi'
 
 const PokemonController = Router()
 
@@ -16,6 +16,11 @@ function parsePokemonId(raw: string): number {
 
 	return id
 }
+
+PokemonController.get('/', async (_req: Request, res: Response) => {
+	const pokemons = await getPokemonList()
+	return res.status(200).send({ pokemons })
+})
 
 PokemonController.get(
 	'/:id',

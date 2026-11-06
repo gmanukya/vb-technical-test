@@ -36,6 +36,16 @@ export interface Evolution {
 	pokedexId: number
 }
 
+/** Fields the card grid needs. Built from one PokeAPI Pokémon resource. */
+export interface PokemonSummary {
+	id: number
+	name: string
+	image: string
+	stats: Pick<StatBlock, 'HP' | 'attack' | 'defense' | 'speed'>
+	apiTypes: { name: string }[]
+}
+
+/** Full Pokémon stored for Markdown export, including the type chart and evolution line. */
 export interface Pokemon {
 	id: number
 	pokedexId: number
