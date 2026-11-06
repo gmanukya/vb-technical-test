@@ -4,8 +4,10 @@ import { useBattleStream } from '../hooks/useBattleStream'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { usePokemonSelection } from '../hooks/usePokemonSelection'
 import { usePokemons } from '../hooks/usePokemons'
+import { useTurnBattle } from '../hooks/useTurnBattle'
 import { BattleLog } from './BattleLog'
 import { Header } from './Header'
+import { TurnLog } from './TurnLog'
 import PokemonList from './PokemonList'
 import { SearchBar } from './SearchBar'
 import { SelectionBar } from './SelectionBar'
@@ -15,6 +17,7 @@ const PokemonApp = () => {
   const { pokemons, status, reload } = usePokemons()
   const selection = usePokemonSelection()
   const battle = useBattleStream()
+  const turns = useTurnBattle()
   const [query, setQuery] = useState('')
   const [types, setTypes] = useState<string[]>([])
   const debouncedQuery = useDebouncedValue(query, 200)
@@ -70,7 +73,7 @@ const PokemonApp = () => {
   }
 
   return (
-    <div className={`flex min-h-screen flex-col bg-amber-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 ${battle.status !== 'idle' ? 'pb-[50vh]' : selected.length > 0 ? 'pb-28' : ''}`}>
+    <div className={`flex min-h-screen flex-col bg-amber-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 ${battle.status !== 'idle' || turns.status !== 'idle' ? 'pb-[50vh]' : selected.length > 0 ? 'pb-28' : ''}`}>
       <div className="sticky top-0 z-20 bg-amber-50 dark:bg-slate-900">
         <Header />
         <div className="flex flex-col gap-3 border-b border-amber-200 px-4 py-4 dark:border-slate-700">
@@ -106,12 +109,32 @@ const PokemonApp = () => {
           onRetry={battle.retry}
         />
       )}
+      {turns.status !== 'idle' && (
+        <TurnLog
+          selected={selected}
+          text={turns.text}
+          rounds={turns.rounds}
+          winnerId={turns.winnerId}
+          status={turns.status}
+          error={turns.error}
+          onCancel={turns.cancel}
+          onClose={turns.close}
+        />
+      )}
       <SelectionBar
         selected={selected}
         fighting={battle.status === 'streaming'}
+        turnsBusy={turns.status === 'streaming'}
         onRemove={selection.remove}
         onClear={selection.clear}
-        onFight={() => void battle.start(selection.selectedIds)}
+        onFight={() => {
+          turns.close()
+          void battle.start(selection.selectedIds)
+        }}
+        onTurns={() => {
+          battle.close()
+          void turns.start(selection.selectedIds)
+        }}
       />
     </div>
   )

@@ -88,7 +88,7 @@ The body should be a battle, streamed as plain text.
 
 ## Using the app
 
-Search is case-insensitive. Type chips add up: Fire and Electric together show Pokémon that have either type. Pick two cards, then Fight. The reply streams into a panel. Cancel stops the request, including the call to VirtualBrain.
+Search is case-insensitive. Type chips add up: Fire and Electric together show Pokémon that have either type. Pick two cards, then Fight for one streamed story, or Turns for a round-by-round match whose narration streams the same way. Cancel stops the request, including the call to VirtualBrain.
 
 ## API
 
@@ -100,6 +100,7 @@ Search is case-insensitive. Type chips add up: Fire and Electric together show P
 | GET | `/contents/:pokemonId` | One Markdown file, downloaded as `025-pikachu.md` |
 | GET | `/contents/all` | Writes all 898 files and returns `{ dir, written, failed }` |
 | POST | `/battles` | Body `{ "pokemonIds": [1, 4] }`. Chunked `text/plain` battle |
+| POST | `/battles/turns` | Same body. Newline-delimited JSON: `{ "text" }` as the narration arrives, one resolved round, then `{ "winnerId": number \| null }` |
 
 Ids must be integers from 1 to 898. `/battles` needs two different ids. Errors are JSON `{ "error": "..." }`.
 
@@ -109,6 +110,6 @@ Ids must be integers from 1 to 898. `/battles` needs two different ids. Errors a
 - Markdown is a fixed template (title, facts, two tables, abilities, evolution) rather than a JSON-to-Markdown library. Every file uses the same headings.
 - National dex ids 1–898 are the set. That is Bulbasaur through Calyrex.
 - `POST /battles` builds a short prompt from the two summaries and pipes VirtualBrain's chunked text straight to the client. Closing the response aborts the upstream request. The access token is cached in memory and refreshed before it expires. Each refresh token is single-use, so refresh is serialized.
-- The response header `x-session-id` is exposed for a later turn-based session. This version plays the whole battle in one request.
+- `POST /battles/turns` keeps that session. Each round the model narrates the attacks, then ends with `{"left":"<move>","right":"<move>"}`, using up to four damaging level-up moves loaded from PokeAPI. The narration is streamed to the client. The move JSON stays on the server, which applies a level-50 damage formula from Attack, Defense, Speed, and the type chart, then sends the result back in the same session. A bad reply is corrected once, then the first listed move is used. The match stops at a KO or 20 rounds.
 
 `npm run lint` in `backend` and `web-app` should pass before a change is committed.

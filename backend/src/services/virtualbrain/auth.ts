@@ -1,5 +1,6 @@
 import { config } from '../../config'
 import { HttpError } from '../../httpError'
+import { postJson } from './http1'
 
 interface Access {
 	accessToken: string
@@ -52,23 +53,20 @@ async function refreshOrExchange(previous: Access): Promise<Access> {
 }
 
 async function exchange(): Promise<Access> {
-	const response = await fetch(`${config.chatbotApiUrl}/v1/auth/api-key/token`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ apiKey: config.chatbotApiKey }),
-	})
+	const response = await postJson(
+		`${config.chatbotApiUrl}/v1/auth/api-key/token`,
+		{ apiKey: config.chatbotApiKey },
+		{ 'Content-Type': 'application/json' },
+	)
 	return readAccess(response)
 }
 
 async function refresh(previous: Access): Promise<Access> {
-	const response = await fetch(`${config.chatbotApiUrl}/v1/auth/api-key/refresh`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({
-			refreshToken: previous.refreshToken,
-			chatbotId: previous.chatbotId,
-		}),
-	})
+	const response = await postJson(
+		`${config.chatbotApiUrl}/v1/auth/api-key/refresh`,
+		{ refreshToken: previous.refreshToken, chatbotId: previous.chatbotId },
+		{ 'Content-Type': 'application/json' },
+	)
 	return readAccess(response)
 }
 

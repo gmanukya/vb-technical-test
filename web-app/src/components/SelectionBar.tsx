@@ -4,12 +4,14 @@ import type { Pokemon } from '../types/pokemon'
 interface SelectionBarProps {
   selected: Pokemon[]
   fighting: boolean
+  turnsBusy: boolean
   onRemove: (id: number) => void
   onClear: () => void
   onFight: () => void
+  onTurns: () => void
 }
 
-export function SelectionBar({ selected, fighting, onRemove, onClear, onFight }: SelectionBarProps) {
+export function SelectionBar({ selected, fighting, turnsBusy, onRemove, onClear, onFight, onTurns }: SelectionBarProps) {
   if (selected.length === 0) {
     return null
   }
@@ -34,14 +36,24 @@ export function SelectionBar({ selected, fighting, onRemove, onClear, onFight }:
             </button>
           ))}
           {selected.length === 2 && (
-            <button
-              type="button"
-              onClick={onFight}
-              disabled={fighting}
-              className="rounded-full bg-slate-900 px-4 py-1 text-sm font-medium text-amber-50 disabled:opacity-60"
-            >
-              {fighting ? 'Fighting…' : 'Fight'}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onFight}
+                disabled={fighting || turnsBusy}
+                className="rounded-full bg-slate-900 px-4 py-1 text-sm font-medium text-amber-50 disabled:opacity-60"
+              >
+                {fighting ? 'Fighting…' : 'Fight'}
+              </button>
+              <button
+                type="button"
+                onClick={onTurns}
+                disabled={fighting || turnsBusy}
+                className="rounded-full bg-slate-900 px-4 py-1 text-sm font-medium text-amber-50 disabled:opacity-60"
+              >
+                {turnsBusy ? 'Turns…' : 'Turns'}
+              </button>
+            </>
           )}
           <button type="button" onClick={onClear} className="rounded-full px-3 py-1 text-sm underline">
             Clear
