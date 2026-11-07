@@ -1,6 +1,6 @@
-import { assertDexId } from '../dex'
-import { HttpError } from '../httpError'
-import { isRecord } from '../isRecord'
+import { assertDexId } from './dex'
+import { HttpError } from './httpError'
+import { isRecord } from './isRecord'
 
 const MESSAGE = 'pokemonIds must be two distinct ids from 1 to 898'
 

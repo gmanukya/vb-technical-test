@@ -30,24 +30,6 @@ export interface ApiPokemon {
 		ability: NamedResource
 	}[]
 	species: NamedResource
-	moves: ApiPokemonMove[]
-}
-
-/** One move a Pokémon can learn, and how it was learned in each version group. */
-export interface ApiPokemonMove {
-	move: NamedResource
-	version_group_details: {
-		level_learned_at: number
-		move_learn_method: NamedResource
-		version_group: NamedResource
-	}[]
-}
-
-/** `GET /move/:name`. `power` is null for status moves. */
-export interface ApiMove {
-	name: string
-	power: number | null
-	type: NamedResource
 }
 
 /** `GET /type/:name`. Only the defensive `*_from` relations are used. */

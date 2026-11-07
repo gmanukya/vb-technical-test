@@ -2,11 +2,10 @@ import { pipeline } from 'node:stream/promises'
 
 import { type Request, type Response, Router } from 'express'
 
-import { parseBattleIds } from './parseBattleRequest'
-
 import { HttpError } from '../httpError'
+import { parseBattleIds } from '../parseBattleRequest'
 import { battlePrompt } from '../services/battle/prompts'
-import { loadFighter } from '../services/battle/fighters'
+import { toFighter } from '../services/battle/fighters'
 import { runTurnBattle } from '../services/battle/turnBattle'
 import { fetchPokemonSummary } from '../services/pokeapi'
 import { completionError, streamCompletion } from '../services/virtualbrain/streamCompletion'
@@ -46,10 +45,13 @@ BattleController.post('/', async (req: Request, res: Response) => {
 	}
 })
 
-/** Round-by-round battle. Each line is JSON. The chatbot only picks moves. */
+/** Round-by-round battle. Each line is JSON. The chatbot only picks abilities. */
 BattleController.post('/turns', async (req: Request, res: Response) => {
 	const ids = parseBattleIds(req.body)
-	const [left, right] = await Promise.all([loadFighter(ids[0]), loadFighter(ids[1])])
+	const [left, right] = await Promise.all([
+		fetchPokemonSummary(ids[0]),
+		fetchPokemonSummary(ids[1]),
+	])
 	const signal = abortWhenClosed(res)
 
 	let started = false
@@ -65,12 +67,14 @@ BattleController.post('/turns', async (req: Request, res: Response) => {
 	}
 
 	try {
-		const winnerId = await runTurnBattle(left, right, signal, writeLine, (transcript) => {
+		const winnerId = await runTurnBattle(toFighter(left), toFighter(right), signal, writeLine, (transcript) => {
 			writeLine({ text: transcript })
 		})
+
 		if (signal.aborted) {
 			return
 		}
+		
 		writeLine({ winnerId })
 		res.end()
 	} catch (error) {

@@ -10,6 +10,7 @@ const bulbasaur: PokemonSummary = {
 	image: '',
 	stats: { HP: 45, attack: 49, defense: 49, speed: 45 },
 	apiTypes: [{ name: 'grass' }, { name: 'poison' }],
+	abilities: ['overgrow'],
 }
 
 const charmander: PokemonSummary = {
@@ -18,6 +19,7 @@ const charmander: PokemonSummary = {
 	image: '',
 	stats: { HP: 39, attack: 52, defense: 43, speed: 65 },
 	apiTypes: [{ name: 'fire' }],
+	abilities: ['blaze'],
 }
 
 function fighter(id: number, name: string): Fighter {
@@ -30,8 +32,7 @@ function fighter(id: number, name: string): Fighter {
 		defense: 49,
 		speed: 45,
 		types: ['grass'],
-		resistances: [],
-		moves: [{ name: 'tackle', type: 'normal', power: 40 }],
+		abilities: ['overgrow'],
 	}
 }
 
@@ -42,9 +43,10 @@ describe('battle prompts', () => {
 		assert.match(prompt, /Charmander/)
 	})
 
-	it('asks for move JSON and does not recount a previous round on the opening turn', () => {
+	it('asks for ability JSON and does not recount a previous round on the opening turn', () => {
 		const prompt = turnPrompt(fighter(1, 'bulbasaur'), fighter(4, 'charmander'), [])
-		assert.match(prompt, /\{"left":"<move>","right":"<move>"\}/)
+		assert.match(prompt, /\{"left":"<ability>","right":"<ability>"\}/)
+		assert.match(prompt, /Abilities: overgrow/)
 		assert.doesNotMatch(prompt, /The last round/)
 		assert.doesNotMatch(prompt, /for \d+ damage/)
 	})

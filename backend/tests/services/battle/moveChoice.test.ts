@@ -2,37 +2,34 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { chooseMoves } from '../../../src/services/battle/moveChoice'
 
-const left = [
-	{ name: 'vine-whip', type: 'grass', power: 45 },
-	{ name: 'tackle', type: 'normal', power: 40 },
-]
-const right = [{ name: 'ember', type: 'fire', power: 40 }]
+const left = ['vine-whip', 'tackle']
+const right = ['ember']
 
 describe('chooseMoves', () => {
-	it('uses the moves named in the first object', () => {
+	it('uses the abilities named in the first object', () => {
 		assert.deepEqual(
 			chooseMoves('Sure. {"left":"vine whip","right":"ember"} thanks', left, right),
-			{ left: left[0], right: right[0] },
+			{ left: 'vine-whip', right: 'ember' },
 		)
 	})
 
-	it('matches case, spaces, and underscores to the listed move', () => {
+	it('matches case, spaces, and underscores to the listed ability', () => {
 		assert.deepEqual(
 			chooseMoves('{"left":"Vine_Whip","right":" EMBER "}', left, right),
-			{ left: left[0], right: right[0] },
+			{ left: 'vine-whip', right: 'ember' },
 		)
 	})
 
-	it('uses that fighter\'s first move when the reply is not usable', () => {
-		assert.deepEqual(chooseMoves('no json here', left, right), { left: left[0], right: right[0] })
-		assert.deepEqual(chooseMoves('{"left":', left, right), { left: left[0], right: right[0] })
+	it('uses that fighter\'s first ability when the reply is not usable', () => {
+		assert.deepEqual(chooseMoves('no json here', left, right), { left: 'vine-whip', right: 'ember' })
+		assert.deepEqual(chooseMoves('{"left":', left, right), { left: 'vine-whip', right: 'ember' })
 		assert.deepEqual(
 			chooseMoves('{"left":"fly","right":"ember"}', left, right),
-			{ left: left[0], right: right[0] },
+			{ left: 'vine-whip', right: 'ember' },
 		)
 		assert.deepEqual(
 			chooseMoves('{"left":1,"right":"ember"}', left, right),
-			{ left: left[0], right: right[0] },
+			{ left: 'vine-whip', right: 'ember' },
 		)
 	})
 })

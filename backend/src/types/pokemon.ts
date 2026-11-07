@@ -30,13 +30,14 @@ export interface Evolution {
 	pokedexId: number
 }
 
-/** Fields the card grid needs. Built from one PokeAPI Pokémon resource. */
+/** Fields the card grid and a turn battle need. Built from one PokeAPI Pokémon resource. */
 export interface PokemonSummary {
 	id: number
 	name: string
 	image: string
 	stats: Pick<StatBlock, 'HP' | 'attack' | 'defense' | 'speed'>
 	apiTypes: { name: string }[]
+	abilities: string[]
 }
 
 /** Record the Markdown file is built from: stats, type chart, abilities, and evolution line. */

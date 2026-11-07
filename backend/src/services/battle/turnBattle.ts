@@ -26,7 +26,7 @@ interface FighterView {
 }
 
 /**
- * Ask the chatbot once per round, stream the prose, and apply the chosen moves.
+ * Ask the chatbot once per round, stream the prose, and apply the chosen abilities.
  * @returns The winner's id, or null when the client aborts or 20 rounds end without a KO.
  */
 export async function runTurnBattle(
@@ -52,18 +52,21 @@ export async function runTurnBattle(
 		const prefix = transcript
 		const reply = await complete(turnPrompt(currentLeft, currentRight, lastHits), signal, sessionId, (visible) => {
 			const next = joinText(prefix, visible)
+
 			if (next) {
 				onText(next)
 			}
 		})
+
 		sessionId = reply.sessionId
 		transcript = joinText(prefix, reply.narration)
 
-		const choice = chooseMoves(reply.text, currentLeft.moves, currentRight.moves)
+		const choice = chooseMoves(reply.text, currentLeft.abilities, currentRight.abilities)
 		const result = applyRound(currentLeft, currentRight, choice.left, choice.right)
 		leftHp = result.leftHp
 		rightHp = result.rightHp
 		lastHits = result.hits
+		
 		onRound({
 			round,
 			left: view(currentLeft, leftHp),

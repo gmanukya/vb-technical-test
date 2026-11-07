@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { parseBattleIds } from '../../src/controllers/parseBattleRequest'
-import { HttpError } from '../../src/httpError'
+import { HttpError } from '../src/httpError'
+import { parseBattleIds } from '../src/parseBattleRequest'
 
 function rejects(run: () => void): void {
 	assert.throws(run, (error: unknown) => {

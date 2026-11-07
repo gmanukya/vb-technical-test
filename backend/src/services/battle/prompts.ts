@@ -18,15 +18,15 @@ export function battlePrompt(pokemons: [PokemonSummary, PokemonSummary]): string
 }
 
 /**
- * One turn. The model names two moves and must not narrate damage.
+ * One turn. The model names two abilities and must not narrate damage.
  * Hits from the previous round are included when there are any.
  */
 export function turnPrompt(left: Fighter, right: Fighter, hits: RoundHit[]): string {
 	const lines = [
-		'Write two short sentences. Name the attack each Pokémon chooses.',
+		'Write two short sentences in plain text. Name the ability each Pokémon uses.',
 		'Do not describe hits landing, damage, remaining HP, or a winner. The server decides whether the slower Pokémon gets to attack.',
-		'After the sentences, write only this JSON and no code fence: {"left":"<move>","right":"<move>"}',
-		'Use only the move names listed for that Pokémon.',
+		'After the sentences, write only this JSON and no code fence: {"left":"<ability>","right":"<ability>"}',
+		'Use only the ability names listed for that Pokémon.',
 		'',
 		describeFighter(left, 'left'),
 		describeFighter(right, 'right'),
@@ -48,10 +48,12 @@ export function turnPrompt(left: Fighter, right: Fighter, hits: RoundHit[]): str
 function describeHit(left: Fighter, right: Fighter, hit: RoundHit): string {
 	let attacker = label(right.name)
 	let defender = label(left.name)
+
 	if (hit.attackerId === left.id) {
 		attacker = label(left.name)
 		defender = label(right.name)
 	}
+	
 	return `${attacker} used ${hit.move} for ${hit.damage} damage. ${defender} has ${hit.targetHp} HP.`
 }
 
@@ -60,6 +62,7 @@ function describeSummary(pokemon: PokemonSummary): string {
 		return type.name
 	}).join(', ')
 	const { HP, attack, defense, speed } = pokemon.stats
+
 	return `${label(pokemon.name)} (#${pokemon.id}): ${types}. HP ${HP}, Attack ${attack}, Defense ${defense}, Speed ${speed}.`
 }
 
@@ -68,9 +71,7 @@ function describeFighter(fighter: Fighter, side: 'left' | 'right'): string {
 		`${side} is ${label(fighter.name)} (#${fighter.id}).`,
 		`Types: ${fighter.types.join(', ') || 'none'}.`,
 		`HP ${fighter.hp} of ${fighter.maxHp}. Attack ${fighter.attack}. Defense ${fighter.defense}. Speed ${fighter.speed}.`,
-		`Moves: ${fighter.moves.map((move) => {
-			return move.name
-		}).join(', ')}.`,
+		`Abilities: ${fighter.abilities.join(', ')}.`,
 	].join(' ')
 }
 

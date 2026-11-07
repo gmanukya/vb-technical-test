@@ -14,9 +14,19 @@ const requests = new Map<string, Promise<unknown>>()
  * A timeout, a dropped connection, 429, or 502–504 is tried up to three times.
  */
 export function cachedGet<T>(url: string): Promise<T> {
-	return remember(requests as Map<string, Promise<T>>, url, () => {
-		return readJson<T>(url)
+	const existing = requests.get(url)
+
+	if (existing) {
+		return existing as Promise<T>
+	}
+
+	const pending = readJson<T>(url).catch((error: unknown) => {
+		requests.delete(url)
+		throw error
 	})
+
+	requests.set(url, pending)
+	return pending
 }
 
 /**
@@ -70,25 +80,4 @@ function pause(ms: number): Promise<void> {
 /** Numeric id at the end of a PokeAPI resource URL. */
 export function idFromUrl(url: string): number {
 	return Number(url.split('/').filter(Boolean).pop())
-}
-
-/**
- * Return the cached promise for `key`, or store the promise from `load`.
- * The entry is removed if `load` rejects.
- */
-export function remember<K, V>(cache: Map<K, Promise<V>>, key: K, load: () => Promise<V>): Promise<V> {
-	const existing = cache.get(key)
-
-	if (existing) {
-		return existing
-	}
-
-	const pending = load().catch(error => {
-		cache.delete(key)
-		throw error
-	})
-
-	cache.set(key, pending)
-
-	return pending
 }

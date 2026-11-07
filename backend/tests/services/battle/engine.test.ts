@@ -1,85 +1,65 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { applyRound, computeDamage, type Combatant, type Move } from '../../../src/services/battle/engine'
-
-const tackle: Move = { name: 'tackle', type: 'normal', power: 40 }
+import { applyRound, computeDamage, type Combatant } from '../../../src/services/battle/engine'
 
 function combatant(overrides: Partial<Combatant> = {}): Combatant {
 	return {
 		id: 1,
 		hp: 100,
+		maxHp: 100,
 		attack: 100,
-		defense: 50,
+		defense: 100,
 		speed: 50,
-		resistances: [{ name: 'normal', damage_multiplier: 1 }],
 		...overrides,
 	}
 }
 
 describe('computeDamage', () => {
-	it('deals 0 when the defender is immune', () => {
-		const damage = computeDamage(
-			{ attack: 100 },
-			{ defense: 50, resistances: [{ name: 'ghost', damage_multiplier: 0 }] },
-			{ name: 'lick', type: 'ghost', power: 30 },
-		)
-		assert.equal(damage, 0)
+	it('deals 20% of max HP when Attack equals Defense', () => {
+		const damage = computeDamage({ attack: 100 }, { defense: 100, maxHp: 100 })
+		assert.equal(damage, 20)
 	})
 
-	it('uses 1 when the attacking type is missing from the chart', () => {
-		const damage = computeDamage(
-			{ attack: 100 },
-			{ defense: 50, resistances: [] },
-			tackle,
-		)
-		assert.equal(damage, 80)
+	it('caps a lopsided hit at 34% of max HP', () => {
+		const damage = computeDamage({ attack: 500 }, { defense: 1, maxHp: 100 })
+		assert.equal(damage, 34)
 	})
 
-	it('applies a 2x and a 0.5x multiplier', () => {
-		const defender = { defense: 50, resistances: [{ name: 'normal', damage_multiplier: 2 }] }
-		assert.equal(computeDamage({ attack: 100 }, defender, tackle), 160)
-
-		defender.resistances[0].damage_multiplier = 0.5
-		assert.equal(computeDamage({ attack: 100 }, defender, tackle), 40)
+	it('deals at least 8% of max HP when Attack is tiny', () => {
+		const damage = computeDamage({ attack: 1 }, { defense: 100_000, maxHp: 100 })
+		assert.equal(damage, 8)
 	})
 
-	it('deals at least 1 when a resisted hit would round to 0', () => {
-		const damage = computeDamage(
-			{ attack: 1 },
-			{ defense: 100_000, resistances: [{ name: 'normal', damage_multiplier: 0.25 }] },
-			tackle,
-		)
+	it('treats 0 defense as 1 and still respects the cap', () => {
+		const damage = computeDamage({ attack: 100 }, { defense: 0, maxHp: 100 })
+		assert.equal(damage, 34)
+	})
+
+	it('deals 1 when max HP is 1', () => {
+		const damage = computeDamage({ attack: 100 }, { defense: 100, maxHp: 1 })
 		assert.equal(damage, 1)
-	})
-
-	it('treats 0 defense as 1', () => {
-		const damage = computeDamage(
-			{ attack: 100 },
-			{ defense: 0, resistances: [{ name: 'normal', damage_multiplier: 1 }] },
-			tackle,
-		)
-		assert.equal(damage, 4000)
 	})
 })
 
 describe('applyRound', () => {
 	it('lets the faster fighter knock out before the slower one attacks', () => {
-		const slow = combatant({ id: 1, hp: 5, attack: 10, defense: 10, speed: 10 })
-		const fast = combatant({ id: 2, hp: 200, attack: 200, defense: 10, speed: 100 })
-		const result = applyRound(slow, fast, tackle, tackle)
+		const slow = combatant({ id: 1, hp: 5, maxHp: 100, attack: 10, defense: 10, speed: 10 })
+		const fast = combatant({ id: 2, hp: 200, maxHp: 200, attack: 200, defense: 10, speed: 100 })
+		const result = applyRound(slow, fast, 'static', 'overgrow')
 
 		assert.equal(result.hits.length, 1)
 		const hit = result.hits[0]
 		assert.ok(hit)
 		assert.equal(hit.attackerId, fast.id)
+		assert.equal(hit.move, 'overgrow')
 		assert.equal(result.leftHp, 0)
 		assert.equal(result.winnerId, fast.id)
 	})
 
 	it('lets the first selected Pokémon go first when Speed is tied', () => {
-		const left = combatant({ id: 1, hp: 80, attack: 250, speed: 40 })
-		const right = combatant({ id: 2, hp: 5, attack: 10, speed: 40 })
-		const result = applyRound(left, right, tackle, tackle)
+		const left = combatant({ id: 1, hp: 80, maxHp: 100, attack: 100, defense: 50, speed: 40 })
+		const right = combatant({ id: 2, hp: 5, maxHp: 100, attack: 10, defense: 50, speed: 40 })
+		const result = applyRound(left, right, 'overgrow', 'blaze')
 
 		assert.equal(result.hits.length, 1)
 		const hit = result.hits[0]
@@ -88,17 +68,17 @@ describe('applyRound', () => {
 		assert.equal(result.winnerId, left.id)
 	})
 
-	it('lands both hits when neither fighter faints', () => {
-		const left = combatant({ id: 1, hp: 500, attack: 50, defense: 50, speed: 10 })
-		const right = combatant({ id: 2, hp: 500, attack: 50, defense: 50, speed: 20 })
-		const result = applyRound(left, right, tackle, tackle)
+	it('leaves both fighters standing after one round from full HP', () => {
+		const left = combatant({ id: 1, hp: 100, maxHp: 100, attack: 100, defense: 100, speed: 10 })
+		const right = combatant({ id: 2, hp: 100, maxHp: 100, attack: 100, defense: 100, speed: 20 })
+		const result = applyRound(left, right, 'overgrow', 'blaze')
 
 		assert.equal(result.hits.length, 2)
 		const hit = result.hits[0]
 		assert.ok(hit)
 		assert.equal(hit.attackerId, right.id)
-		assert.equal(result.leftHp, 460)
-		assert.equal(result.rightHp, 460)
+		assert.equal(result.leftHp, 80)
+		assert.equal(result.rightHp, 80)
 		assert.equal(result.winnerId, null)
 	})
 })

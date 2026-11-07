@@ -1,6 +1,6 @@
 import type { ApiChainLink, ApiEvolutionChain, ApiPokemon, ApiSpecies, ApiType } from './apiTypes'
 import { baseStat } from './fields'
-import { cachedGet, idFromUrl, POKEAPI_URL, remember } from './http'
+import { cachedGet, idFromUrl, POKEAPI_URL } from './http'
 import { computeResistances } from './resistances'
 
 import type { Evolution, Pokemon } from '../../types/pokemon'
@@ -20,16 +20,9 @@ const findChainLink = (link: ApiChainLink, speciesName: string): ApiChainLink | 
 	return undefined
 }
 
-const pokemonCache = new Map<number, Promise<Pokemon>>()
-
-/**
- * Full Pokémon used for Markdown: species, evolution line, type chart, and abilities.
- * Repeated calls for the same id reuse one request.
- */
+/** Full Pokémon used for Markdown: species, evolution line, type chart, and abilities. */
 export function fetchPokemon(id: number): Promise<Pokemon> {
-	return remember(pokemonCache, id, () => {
-		return loadPokemon(id)
-	})
+	return loadPokemon(id)
 }
 
 async function loadPokemon(id: number): Promise<Pokemon> {
@@ -51,9 +44,11 @@ async function loadPokemon(id: number): Promise<Pokemon> {
 	const evolutionChain = await cachedGet<ApiEvolutionChain>(species.evolution_chain.url)
 	const chainLink = findChainLink(evolutionChain.chain, species.name)
 	let nextForms: ApiChainLink[] = []
+
 	if (chainLink !== undefined) {
 		nextForms = chainLink.evolves_to
 	}
+	
 	const apiEvolutions: Evolution[] = nextForms.map(({ species: evolution }) => {
 		return { name: evolution.name, pokedexId: idFromUrl(evolution.url) }
 	})
