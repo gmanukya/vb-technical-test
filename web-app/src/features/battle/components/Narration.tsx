@@ -3,10 +3,9 @@ import { StoryMarkdown } from './StoryMarkdown'
 
 interface NarrationProps {
   text: string
-  display: boolean
 }
 
-export function Narration({ text, display }: NarrationProps) {
+export function Narration({ text }: NarrationProps) {
   const endRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -19,16 +18,8 @@ export function Narration({ text, display }: NarrationProps) {
 
   return (
     <div className="max-w-[65ch]">
-      <NarrationText text={text} display={display} />
+      <StoryMarkdown text={text} />
       <div ref={endRef} />
     </div>
   )
-}
-
-function NarrationText({ text, display }: NarrationProps) {
-  if (display) {
-    return <StoryMarkdown text={text} />
-  }
-
-  return <p className="text-base leading-relaxed whitespace-pre-wrap">{text}</p>
 }

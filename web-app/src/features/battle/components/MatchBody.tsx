@@ -27,7 +27,7 @@ export function MatchBody({ text, error, status, lines, winner }: MatchBodyProps
       <StatusNote status={status} />
       <ErrorText message={error} />
       <WinnerLine status={status} text={winner} />
-      <Narration text={text} display={false} />
+      <Narration text={text} />
       <MoveTimeline lines={lines} />
       <div ref={endRef} />
     </div>

@@ -94,13 +94,3 @@ Search is case-insensitive. Type chips add up: Fire and Electric together show P
 | POST | `/battles/turns` | Same body. Newline-delimited JSON: `{ "text" }` as the narration arrives, one resolved round, then `{ "winnerId": number \| null }` |
 
 Ids must be integers from 1 to 898. `/battles` needs two different ids. Errors are JSON `{ "error": "..." }`.
-
-## Decisions
-
-- The grid uses one cached PokeAPI Pokémon call per id. Species, evolutions, and the type chart are loaded only for Markdown. At most 8 requests run at once. A finished list stays in memory for the life of the process.
-- Markdown is a fixed template (title, facts, two tables, abilities, evolution) rather than a JSON-to-Markdown library. Every file uses the same headings.
-- National dex ids 1–898 are the set. That is Bulbasaur through Calyrex.
-- `POST /battles` builds a short prompt from the two summaries and pipes VirtualBrain's chunked text straight to the client. Closing the response aborts the upstream request. The access token is cached in memory and the API key is exchanged again before it expires. Concurrent exchanges share one request.
-- `POST /battles/turns` keeps that session. Each round the model names two attacks, then ends with `{"left":"<move>","right":"<move>"}`, using up to four damaging level-up moves loaded from PokeAPI. The prose before that JSON is streamed to the client. A missing or unknown move uses that fighter's first listed move. The server applies damage as power times Attack divided by Defense, times the type multiplier. Speed decides who hits first. The match stops at a KO or 20 rounds.
-
-`npm run lint` in `backend` and `web-app` should pass before a change is committed.

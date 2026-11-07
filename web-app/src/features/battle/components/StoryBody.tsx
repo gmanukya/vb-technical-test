@@ -14,7 +14,7 @@ export function StoryBody({ text, error, status }: StoryBodyProps) {
     <div className="flex flex-col gap-5 lg:py-4">
       <StatusNote status={status} />
       <ErrorText message={error} />
-      <Narration text={text} display />
+      <Narration text={text} />
     </div>
   )
 }
