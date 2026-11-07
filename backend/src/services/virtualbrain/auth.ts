@@ -1,4 +1,4 @@
-import { postJson } from './http1'
+import axios from 'axios'
 
 import { config } from '../../config'
 import { HttpError } from '../../httpError'
@@ -6,7 +6,6 @@ import { isRecord } from '../../isRecord'
 
 interface Access {
 	accessToken: string
-	refreshToken: string
 	expiresAt: number
 	chatbotId: string
 }
@@ -18,7 +17,7 @@ let inflight: Promise<Access> | null = null
 
 /**
  * Bearer token and chatbot id. The API key never leaves this process.
- * A token is reused until 60 seconds before expiry. Concurrent callers share one refresh.
+ * A token is reused until 60 seconds before expiry. Concurrent callers share one exchange.
  */
 export function getChatbotAccess(): Promise<Access> {
 	if (!config.chatbotApiKey) {
@@ -30,14 +29,7 @@ export function getChatbotAccess(): Promise<Access> {
 	}
 
 	if (!inflight) {
-		const previous = access
-		let refreshed: Promise<Access>
-		if (previous) {
-			refreshed = refreshOrExchange(previous)
-		} else {
-			refreshed = exchange()
-		}
-		inflight = refreshed
+		inflight = exchange()
 			.then(next => {
 				access = next
 				return next
@@ -50,67 +42,49 @@ export function getChatbotAccess(): Promise<Access> {
 	return inflight
 }
 
-/** Drop the cached access token so the next call exchanges or refreshes. */
+/** Drop the cached access token so the next call exchanges the API key again. */
 export function invalidateChatbotAccess(): void {
 	access = null
 }
 
-async function refreshOrExchange(previous: Access): Promise<Access> {
-	try {
-		return await refresh(previous)
-	} catch {
-		return exchange()
-	}
-}
-
 async function exchange(): Promise<Access> {
-	const response = await postJson(
-		`${config.chatbotApiUrl}/v1/auth/api-key/token`,
-		{ apiKey: config.chatbotApiKey },
-		{ 'Content-Type': 'application/json' },
-	)
-	return readAccess(response)
-}
+	let status = 502
+	let data: unknown
 
-async function refresh(previous: Access): Promise<Access> {
-	const response = await postJson(
-		`${config.chatbotApiUrl}/v1/auth/api-key/refresh`,
-		{ refreshToken: previous.refreshToken, chatbotId: previous.chatbotId },
-		{ 'Content-Type': 'application/json' },
-	)
-	return readAccess(response)
+	try {
+		const response = await axios.post<unknown>(`${config.chatbotApiUrl}/v1/auth/api-key/token`, {
+			apiKey: config.chatbotApiKey,
+		}, {
+			validateStatus: () => true,
+		})
+
+		status = response.status
+		data = response.data
+	} catch {
+		throw new HttpError(502, 'Battle service is unavailable')
+	}
+
+	return readAccess(status, data)
 }
 
 /** 401 and 403 mean the key was rejected. Any other failure, including a malformed body, is 502. */
-async function readAccess(response: Response): Promise<Access> {
-	if (response.status === 401 || response.status === 403) {
+function readAccess(status: number, body: unknown): Access {
+	if (status === 401 || status === 403) {
 		throw new HttpError(401, 'Chatbot API key was rejected')
 	}
 
-	if (!response.ok) {
+	if (status < 200 || status >= 300 || !isRecord(body)) {
 		throw new HttpError(502, 'Battle service is unavailable')
 	}
 
-	const body: unknown = await response.json()
-
-	if (!isRecord(body)) {
-		throw new HttpError(502, 'Battle service is unavailable')
-	}
-
-	const { accessToken, refreshToken, expiresIn, chatbotId } = body
+	const { accessToken, expiresIn, chatbotId } = body
 	
-	if (
-		typeof accessToken !== 'string'
-		|| typeof refreshToken !== 'string'
-		|| typeof chatbotId !== 'string'
-		|| typeof expiresIn !== 'number'
-	) {
+	if (typeof accessToken !== 'string' || typeof chatbotId !== 'string' || typeof expiresIn !== 'number') {
 		throw new HttpError(502, 'Battle service is unavailable')
 	}
 
 	return {
 		accessToken,
-		refreshToken,
 		chatbotId,
 		expiresAt: Date.now() + expiresIn * 1000,
 	}

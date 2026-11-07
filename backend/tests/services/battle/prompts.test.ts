@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import type { PokemonSummary } from '../../../src/types/pokemon'
 import type { Fighter } from '../../../src/services/battle/fighters'
-import { battlePrompt, followUpPrompt, openingPrompt } from '../../../src/services/battle/prompts'
+import { battlePrompt, turnPrompt } from '../../../src/services/battle/prompts'
 
 const bulbasaur: PokemonSummary = {
 	id: 1,
@@ -43,7 +43,7 @@ describe('battle prompts', () => {
 	})
 
 	it('asks for move JSON and does not recount a previous round on the opening turn', () => {
-		const prompt = openingPrompt(fighter(1, 'bulbasaur'), fighter(4, 'charmander'))
+		const prompt = turnPrompt(fighter(1, 'bulbasaur'), fighter(4, 'charmander'), [])
 		assert.match(prompt, /\{"left":"<move>","right":"<move>"\}/)
 		assert.doesNotMatch(prompt, /The last round/)
 		assert.doesNotMatch(prompt, /for \d+ damage/)
@@ -52,7 +52,7 @@ describe('battle prompts', () => {
 	it('includes the previous hit on a follow-up turn', () => {
 		const left = fighter(1, 'bulbasaur')
 		const right = fighter(4, 'charmander')
-		const prompt = followUpPrompt(left, right, [{
+		const prompt = turnPrompt(left, right, [{
 			attackerId: left.id,
 			move: 'tackle',
 			damage: 12,

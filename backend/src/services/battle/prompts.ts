@@ -17,9 +17,12 @@ export function battlePrompt(pokemons: [PokemonSummary, PokemonSummary]): string
 	].join('\n')
 }
 
-/** First turn. The model names two moves and must not narrate damage. */
-export function openingPrompt(left: Fighter, right: Fighter): string {
-	return [
+/**
+ * One turn. The model names two moves and must not narrate damage.
+ * Hits from the previous round are included when there are any.
+ */
+export function turnPrompt(left: Fighter, right: Fighter, hits: RoundHit[]): string {
+	const lines = [
 		'Write two short sentences. Name the attack each Pokémon chooses.',
 		'Do not describe hits landing, damage, remaining HP, or a winner. The server decides whether the slower Pokémon gets to attack.',
 		'After the sentences, write only this JSON and no code fence: {"left":"<move>","right":"<move>"}',
@@ -27,46 +30,29 @@ export function openingPrompt(left: Fighter, right: Fighter): string {
 		'',
 		describeFighter(left, 'left'),
 		describeFighter(right, 'right'),
-	].join('\n')
-}
+	]
 
-/** Later turn. Includes the resolved hits from the previous round. */
-export function followUpPrompt(left: Fighter, right: Fighter, hits: RoundHit[]): string {
-	const events = hits.map((hit) => {
-		let attacker = label(right.name)
-		let defender = label(left.name)
-		if (hit.attackerId === left.id) {
-			attacker = label(left.name)
-			defender = label(right.name)
-		}
-		return `${attacker} used ${hit.move} for ${hit.damage} damage. ${defender} has ${hit.targetHp} HP.`
-	})
+	if (hits.length === 0) {
+		return lines.join('\n')
+	}
 
 	return [
 		'The last round:',
-		...events,
-		'Write two short sentences. Name the attack each Pokémon chooses.',
-		'Do not describe hits landing, damage, remaining HP, or a winner. The server decides whether the slower Pokémon gets to attack.',
-		'After the sentences, write only this JSON and no code fence: {"left":"<move>","right":"<move>"}',
-		'Use only the move names listed for that Pokémon.',
-		'',
-		describeFighter(left, 'left'),
-		describeFighter(right, 'right'),
+		...hits.map((hit) => {
+			return describeHit(left, right, hit)
+		}),
+		...lines,
 	].join('\n')
 }
 
-/** Second chance after a reply that did not contain two listed moves. */
-export function correctionPrompt(left: Fighter, right: Fighter): string {
-	return [
-		'That reply was not usable.',
-		'Reply with only {"left":"<move>","right":"<move>"}.',
-		`left moves: ${left.moves.map((move) => {
-			return move.name
-		}).join(', ')}`,
-		`right moves: ${right.moves.map((move) => {
-			return move.name
-		}).join(', ')}`,
-	].join('\n')
+function describeHit(left: Fighter, right: Fighter, hit: RoundHit): string {
+	let attacker = label(right.name)
+	let defender = label(left.name)
+	if (hit.attackerId === left.id) {
+		attacker = label(left.name)
+		defender = label(right.name)
+	}
+	return `${attacker} used ${hit.move} for ${hit.damage} damage. ${defender} has ${hit.targetHp} HP.`
 }
 
 function describeSummary(pokemon: PokemonSummary): string {

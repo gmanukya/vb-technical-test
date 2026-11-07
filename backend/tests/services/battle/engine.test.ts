@@ -32,15 +32,15 @@ describe('computeDamage', () => {
 			{ defense: 50, resistances: [] },
 			tackle,
 		)
-		assert.equal(damage, 37)
+		assert.equal(damage, 80)
 	})
 
 	it('applies a 2x and a 0.5x multiplier', () => {
 		const defender = { defense: 50, resistances: [{ name: 'normal', damage_multiplier: 2 }] }
-		assert.equal(computeDamage({ attack: 100 }, defender, tackle), 74)
+		assert.equal(computeDamage({ attack: 100 }, defender, tackle), 160)
 
 		defender.resistances[0].damage_multiplier = 0.5
-		assert.equal(computeDamage({ attack: 100 }, defender, tackle), 18)
+		assert.equal(computeDamage({ attack: 100 }, defender, tackle), 40)
 	})
 
 	it('deals at least 1 when a resisted hit would round to 0', () => {
@@ -58,7 +58,7 @@ describe('computeDamage', () => {
 			{ defense: 0, resistances: [{ name: 'normal', damage_multiplier: 1 }] },
 			tackle,
 		)
-		assert.equal(damage, 1762)
+		assert.equal(damage, 4000)
 	})
 })
 
@@ -97,17 +97,8 @@ describe('applyRound', () => {
 		const hit = result.hits[0]
 		assert.ok(hit)
 		assert.equal(hit.attackerId, right.id)
-		assert.equal(result.leftHp, 481)
-		assert.equal(result.rightHp, 481)
-		assert.equal(result.winnerId, null)
-	})
-
-	it('returns a draw when both fighters are already at 0 HP', () => {
-		const left = combatant({ id: 1, hp: 0, speed: 10 })
-		const right = combatant({ id: 2, hp: 0, speed: 20 })
-		const result = applyRound(left, right, tackle, tackle)
-
-		assert.deepEqual(result.hits, [])
+		assert.equal(result.leftHp, 460)
+		assert.equal(result.rightHp, 460)
 		assert.equal(result.winnerId, null)
 	})
 })

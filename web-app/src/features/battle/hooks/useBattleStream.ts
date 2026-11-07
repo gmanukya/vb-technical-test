@@ -1,6 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
 
-import { API_URL } from '../../../api/client'
 import type { BattleStatus } from '../types'
 
 export function useBattleStream() {
@@ -22,7 +21,7 @@ export function useBattleStream() {
     setStatus('streaming')
 
     try {
-      const response = await fetch(`${API_URL}/battles`, {
+      const response = await fetch('/battles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pokemonIds }),

@@ -31,70 +31,61 @@ export interface RoundResult {
 	winnerId: number | null
 }
 
-const LEVEL = 50
-
 /**
- * Level-50 damage. A type multiplier of 0 is immunity and deals 0.
- * Any other hit deals at least 1.
+ * Damage is power times Attack divided by Defense, times the type multiplier.
+ * Immunity deals 0. Any other hit deals at least 1. Defense of 0 is treated as 1.
  */
 export function computeDamage(attacker: Pick<Combatant, 'attack'>, defender: Pick<Combatant, 'defense' | 'resistances'>, move: Move): number {
 	const match = defender.resistances.find((resistance) => {
 		return resistance.name === move.type
 	})
+
 	let multiplier = 1
+
 	if (match !== undefined) {
 		multiplier = match.damage_multiplier
 	}
-	if (multiplier === 0) return 0
 
-	let defense = 1
-	if (defender.defense > 0) {
-		defense = defender.defense
+	if (multiplier === 0) {
+		return 0
 	}
-	const base = Math.floor((((2 * LEVEL / 5 + 2) * move.power * attacker.attack / defense) / 50) + 2)
-	return Math.max(1, Math.floor(base * multiplier))
+
+	let defense = defender.defense
+
+	if (defense <= 0) {
+		defense = 1
+	}
+
+	const raw = Math.floor(move.power * attacker.attack / defense * multiplier)
+
+	if (raw < 1) {
+		return 1
+	}
+
+	return raw
 }
 
 /**
  * One round. The faster fighter hits first. Equal Speed lets the first selected Pokémon go first.
- * A fighter at 0 HP does not attack, and a KO cancels the slower hit.
+ * A KO cancels the slower hit.
  */
 export function applyRound(left: Combatant, right: Combatant, leftMove: Move, rightMove: Move): RoundResult {
-	const leftFirst = left.speed >= right.speed
-	let order: { fighter: Combatant, move: Move }[]
-	if (leftFirst) {
-		order = [{ fighter: left, move: leftMove }, { fighter: right, move: rightMove }]
-	} else {
-		order = [{ fighter: right, move: rightMove }, { fighter: left, move: leftMove }]
-	}
-
 	let leftHp = left.hp
 	let rightHp = right.hp
 	const hits: RoundHit[] = []
 
-	for (const action of order) {
-		let attackerHp = rightHp
-		if (action.fighter.id === left.id) {
-			attackerHp = leftHp
+	if (left.speed >= right.speed) {
+		rightHp = strike(left, right, leftMove, rightHp, hits)
+
+		if (rightHp > 0) {
+			leftHp = strike(right, left, rightMove, leftHp, hits)
 		}
-		if (attackerHp <= 0) continue
+	} else {
+		leftHp = strike(right, left, rightMove, leftHp, hits)
 
-		const attackingLeft = action.fighter.id === left.id
-		let defender = left
-		let defenderHp = leftHp
-		if (attackingLeft) {
-			defender = right
-			defenderHp = rightHp
+		if (leftHp > 0) {
+			rightHp = strike(left, right, leftMove, rightHp, hits)
 		}
-		if (defenderHp <= 0) continue
-
-		const damage = computeDamage(action.fighter, defender, action.move)
-		const targetHp = Math.max(0, defenderHp - damage)
-		if (attackingLeft) rightHp = targetHp
-		else leftHp = targetHp
-
-		hits.push({ attackerId: action.fighter.id, move: action.move.name, damage, targetHp })
-		if (targetHp <= 0) break
 	}
 
 	return {
@@ -105,10 +96,33 @@ export function applyRound(left: Combatant, right: Combatant, leftMove: Move, ri
 	}
 }
 
+function strike(attacker: Combatant, defender: Combatant, move: Move, defenderHp: number, hits: RoundHit[]): number {
+	const damage = computeDamage(attacker, defender, move)
+	const targetHp = Math.max(0, defenderHp - damage)
+
+	hits.push({
+		attackerId: attacker.id,
+		move: move.name,
+		damage,
+		targetHp,
+	})
+
+	return targetHp
+}
+
 /** Both fighters at 0 HP is a draw. Otherwise the id still standing, or null when both remain. */
 function winner(leftId: number, rightId: number, leftHp: number, rightHp: number): number | null {
-	if (leftHp <= 0 && rightHp <= 0) return null
-	if (leftHp <= 0) return rightId
-	if (rightHp <= 0) return leftId
+	if (leftHp <= 0 && rightHp <= 0) {
+		return null
+	}
+
+	if (leftHp <= 0) {
+		return rightId
+	}
+
+	if (rightHp <= 0) {
+		return leftId
+	}
+	
 	return null
 }

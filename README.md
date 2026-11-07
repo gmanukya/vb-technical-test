@@ -24,22 +24,13 @@ Create `backend/.env`. The server reads it on startup, so restart after any chan
 
 ```
 PORT=3002
-CORS_ORIGIN=http://localhost:5173
 EXPORT_DIR=./exports/pokemons
 VB_API_KEY=your-api-key
 ```
 
 `VB_API_URL` is optional. It defaults to `https://chatbot-api.getvirtualbrain.com`.
 
-`PORT`, `CORS_ORIGIN`, and `EXPORT_DIR` have the defaults above when omitted. `VB_API_KEY` does not: Fight returns an error until it is set. Generate the key from the brain that holds the Pokémon documents. The key is exchanged for a short-lived access token inside the server and is never sent to the browser.
-
-### Web app
-
-Optional. Create `web-app/.env` only if the API is not on port 3002:
-
-```
-VITE_API_URL=http://localhost:3002
-```
+`PORT` and `EXPORT_DIR` have the defaults above when omitted. `VB_API_KEY` does not: Fight returns an error until it is set. Generate the key from the brain that holds the Pokémon documents. The key is exchanged for a short-lived access token inside the server and is never sent to the browser.
 
 ## Run
 
@@ -57,13 +48,13 @@ cd web-app
 npm run dev
 ```
 
-Open http://localhost:5173. The API listens on http://localhost:3002. `GET /ping` returns `pong`.
+Open http://localhost:5173. The API listens on http://localhost:3002. `npm run dev` in `web-app` proxies `/ping`, `/pokemons`, `/contents`, and `/battles` to that API. `GET /ping` returns `pong`.
 
 Production builds:
 
 ```bash
-cd backend && npm run build && npm start
 cd web-app && npm run build
+cd ../backend && npm run build && npm start
 ```
 
 ## VirtualBrain import
@@ -109,7 +100,7 @@ Ids must be integers from 1 to 898. `/battles` needs two different ids. Errors a
 - The grid uses one cached PokeAPI Pokémon call per id. Species, evolutions, and the type chart are loaded only for Markdown. At most 8 requests run at once. A finished list stays in memory for the life of the process.
 - Markdown is a fixed template (title, facts, two tables, abilities, evolution) rather than a JSON-to-Markdown library. Every file uses the same headings.
 - National dex ids 1–898 are the set. That is Bulbasaur through Calyrex.
-- `POST /battles` builds a short prompt from the two summaries and pipes VirtualBrain's chunked text straight to the client. Closing the response aborts the upstream request. The access token is cached in memory and refreshed before it expires. Each refresh token is single-use, so refresh is serialized.
-- `POST /battles/turns` keeps that session. Each round the model narrates the attacks, then ends with `{"left":"<move>","right":"<move>"}`, using up to four damaging level-up moves loaded from PokeAPI. The narration is streamed to the client. The move JSON stays on the server, which applies a level-50 damage formula from Attack, Defense, Speed, and the type chart, then sends the result back in the same session. A bad reply is corrected once, then the first listed move is used. The match stops at a KO or 20 rounds.
+- `POST /battles` builds a short prompt from the two summaries and pipes VirtualBrain's chunked text straight to the client. Closing the response aborts the upstream request. The access token is cached in memory and the API key is exchanged again before it expires. Concurrent exchanges share one request.
+- `POST /battles/turns` keeps that session. Each round the model names two attacks, then ends with `{"left":"<move>","right":"<move>"}`, using up to four damaging level-up moves loaded from PokeAPI. The prose before that JSON is streamed to the client. A missing or unknown move uses that fighter's first listed move. The server applies damage as power times Attack divided by Defense, times the type multiplier. Speed decides who hits first. The match stops at a KO or 20 rounds.
 
 `npm run lint` in `backend` and `web-app` should pass before a change is committed.

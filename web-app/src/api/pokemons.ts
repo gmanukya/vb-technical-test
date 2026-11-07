@@ -1,9 +1,8 @@
 import axios from 'axios'
 
 import type { Pokemon } from '../shared/types/pokemon'
-import { API_URL } from './client'
 
 export async function fetchPokemonList(): Promise<Pokemon[]> {
-  const response = await axios.get<{ pokemons: Pokemon[] }>(`${API_URL}/pokemons`)
+  const response = await axios.get<{ pokemons: Pokemon[] }>('/pokemons')
   return response.data.pokemons
 }

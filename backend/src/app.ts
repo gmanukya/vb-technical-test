@@ -1,8 +1,6 @@
-import cors from 'cors'
 import express, { type ErrorRequestHandler, type Express } from 'express'
 import axios from 'axios'
 
-import { config } from './config'
 import { BattleController } from './controllers/BattleController'
 import { ContentController } from './controllers/ContentsController'
 import { PokemonController } from './controllers/PokemonController'
@@ -13,8 +11,6 @@ export function createApp(): Express {
 	const app = express()
 
 	app.disable('x-powered-by')
-
-	app.use(cors({ origin: config.corsOrigin }))
 
 	app.use(express.json({ limit: '100kb' }))
 

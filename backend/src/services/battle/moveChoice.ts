@@ -1,40 +1,73 @@
 import { isRecord } from '../../isRecord'
-import { firstJsonObject } from './jsonObject'
+import type { Move } from './engine'
+
+interface Choice {
+	left?: string
+	right?: string
+}
 
 /**
- * First JSON object whose move names are in each fighter's list.
- * @returns The matched move names, or null when the text has no usable choice.
+ * Moves named in the first `{...}` object.
+ * A missing object, broken JSON, or an unknown name uses that fighter's first move.
  */
-export function parseMoveChoice(text: string, leftMoves: readonly string[], rightMoves: readonly string[]): { left: string, right: string } | null {
-	const json = firstJsonObject(text)
-	if (!json) return null
+export function chooseMoves(
+	text: string,
+	leftMoves: readonly Move[],
+	rightMoves: readonly Move[],
+): { left: Move, right: Move } {
+	const choice = readChoice(text)
+	let leftName: string | undefined
+	let rightName: string | undefined
+	if (choice !== null) {
+		leftName = choice.left
+		rightName = choice.right
+	}
 
-	let body: unknown
+	return {
+		left: resolveMove(leftMoves, leftName),
+		right: resolveMove(rightMoves, rightName),
+	}
+}
+
+function readChoice(text: string): Choice | null {
+	const start = text.indexOf('{')
+	const end = text.indexOf('}', start)
+	if (start < 0 || end < 0) {
+		return null
+	}
+
 	try {
-		body = JSON.parse(json)
+		const body: unknown = JSON.parse(text.slice(start, end + 1))
+		if (!isRecord(body)) {
+			return null
+		}
+
+		const choice: Choice = {}
+		if (typeof body.left === 'string') {
+			choice.left = body.left
+		}
+		if (typeof body.right === 'string') {
+			choice.right = body.right
+		}
+		return choice
 	} catch {
 		return null
 	}
-
-	if (!isRecord(body) || typeof body.left !== 'string' || typeof body.right !== 'string') {
-		return null
-	}
-
-	const left = matchMove(body.left, leftMoves)
-	const right = matchMove(body.right, rightMoves)
-	if (!left || !right) return null
-	return { left, right }
 }
 
-function matchMove(raw: string, moves: readonly string[]): string | null {
-	const needle = normalizeMove(raw)
-	const match = moves.find((move) => {
-		return normalizeMove(move) === needle
-	})
-	if (!match) {
-		return null
+function resolveMove(moves: readonly Move[], raw: string | undefined): Move {
+	let needle: string | null = null
+	if (raw !== undefined) {
+		needle = normalizeMove(raw)
 	}
-	return match
+
+	const match = moves.find((move) => {
+		return normalizeMove(move.name) === needle
+	})
+	if (match !== undefined) {
+		return match
+	}
+	return moves[0]
 }
 
 function normalizeMove(value: string): string {

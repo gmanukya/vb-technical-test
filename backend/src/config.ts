@@ -24,7 +24,6 @@ function envValue(name: string, fallback: string): string {
 /** Values read from the environment at startup. `chatbotApiKey` is empty until Fight is configured. */
 export const config = {
 	port: readPort(),
-	corsOrigin: envValue('CORS_ORIGIN', 'http://localhost:5173'),
 	exportDir: envValue('EXPORT_DIR', './exports/pokemons'),
 	chatbotApiUrl: envValue('VB_API_URL', 'https://chatbot-api.getvirtualbrain.com'),
 	chatbotApiKey: envValue('VB_API_KEY', ''),

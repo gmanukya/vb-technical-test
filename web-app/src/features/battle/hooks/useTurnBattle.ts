@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from 'react'
-import { API_URL } from '../../../api/client'
 import type { BattleStatus, TurnRound } from '../types'
 
 export function useTurnBattle() {
@@ -25,7 +24,7 @@ export function useTurnBattle() {
     let sawWinner = false
 
     try {
-      const response = await fetch(`${API_URL}/battles/turns`, {
+      const response = await fetch('/battles/turns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pokemonIds }),
