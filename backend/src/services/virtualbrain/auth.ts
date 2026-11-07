@@ -48,23 +48,19 @@ export function invalidateChatbotAccess(): void {
 }
 
 async function exchange(): Promise<Access> {
-	let status = 502
-	let data: unknown
-
-	try {
-		const response = await axios.post<unknown>(`${config.chatbotApiUrl}/v1/auth/api-key/token`, {
+	const response = await axios.post<unknown>(
+		`${config.chatbotApiUrl}/v1/auth/api-key/token`,
+		{
 			apiKey: config.chatbotApiKey,
-		}, {
+		},
+		{
 			validateStatus: () => true,
-		})
-
-		status = response.status
-		data = response.data
-	} catch {
+		},
+	).catch(() => {
 		throw new HttpError(502, 'Battle service is unavailable')
-	}
+	})
 
-	return readAccess(status, data)
+	return readAccess(response.status, response.data)
 }
 
 /** 401 and 403 mean the key was rejected. Any other failure, including a malformed body, is 502. */

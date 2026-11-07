@@ -29,6 +29,23 @@ export function chooseMoves(
 	}
 }
 
+/** A reply is complete only after it contains both move names in a valid JSON object. */
+export function hasMoveChoice(text: string): boolean {
+	const choice = readChoice(text)
+	return choice?.left !== undefined && choice.right !== undefined
+}
+
+/** Prose before the first move-choice object. */
+export function textBeforeJson(text: string): string {
+	const start = text.indexOf('{')
+
+	if (start < 0) {
+		return text.trim()
+	}
+
+	return text.slice(0, start).trim()
+}
+
 function readChoice(text: string): Choice | null {
 	const start = text.indexOf('{')
 	const end = text.indexOf('}', start)

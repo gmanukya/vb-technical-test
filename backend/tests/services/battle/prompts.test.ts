@@ -43,10 +43,13 @@ describe('battle prompts', () => {
 		assert.match(prompt, /Charmander/)
 	})
 
-	it('asks for ability JSON and does not recount a previous round on the opening turn', () => {
+	it('asks for two sentences and the same ability names in JSON on the opening turn', () => {
 		const prompt = turnPrompt(fighter(1, 'bulbasaur'), fighter(4, 'charmander'), [])
-		assert.match(prompt, /\{"left":"<ability>","right":"<ability>"\}/)
+		assert.match(prompt, /two short sentences/)
+		assert.match(prompt, /Name the ability each Pokémon uses/)
 		assert.match(prompt, /Abilities: overgrow/)
+		assert.match(prompt, /\{"left"/)
+		assert.match(prompt, /use those same names in the sentences/)
 		assert.doesNotMatch(prompt, /The last round/)
 		assert.doesNotMatch(prompt, /for \d+ damage/)
 	})

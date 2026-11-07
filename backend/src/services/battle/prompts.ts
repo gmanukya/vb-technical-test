@@ -18,7 +18,7 @@ export function battlePrompt(pokemons: [PokemonSummary, PokemonSummary]): string
 }
 
 /**
- * One turn. The model names two abilities and must not narrate damage.
+ * One turn. The model names both abilities in the sentences and again in JSON.
  * Hits from the previous round are included when there are any.
  */
 export function turnPrompt(left: Fighter, right: Fighter, hits: RoundHit[]): string {
@@ -26,7 +26,7 @@ export function turnPrompt(left: Fighter, right: Fighter, hits: RoundHit[]): str
 		'Write two short sentences in plain text. Name the ability each Pokémon uses.',
 		'Do not describe hits landing, damage, remaining HP, or a winner. The server decides whether the slower Pokémon gets to attack.',
 		'After the sentences, write only this JSON and no code fence: {"left":"<ability>","right":"<ability>"}',
-		'Use only the ability names listed for that Pokémon.',
+		'Use only the ability names listed for that Pokémon, and use those same names in the sentences.',
 		'',
 		describeFighter(left, 'left'),
 		describeFighter(right, 'right'),

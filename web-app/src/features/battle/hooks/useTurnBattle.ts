@@ -112,43 +112,49 @@ function takeLines(buffer: string): { lines: string[], rest: string } {
 
 function applyLines(
   lines: string[],
-  setText: (text: string) => void,
+  setText: (update: (current: string) => string) => void,
   setRounds: (update: (current: TurnRound[]) => TurnRound[]) => void,
   setWinnerId: (winnerId: number | null) => void,
 ): boolean {
   let sawWinner = false
   const rounds: TurnRound[] = []
-  let nextText: string | null = null
+  const narrations: string[] = []
 
   for (const line of lines) {
-    const event = JSON.parse(line) as Partial<TurnRound> & { winnerId?: number | null, text?: string, error?: string }
-    
-    if (typeof event.text === 'string') {
-      nextText = event.text
-      continue
-    }
-    
+    const event = JSON.parse(line) as Partial<TurnRound> & { winnerId?: number | null, narration?: string, error?: string }
+
     if (typeof event.error === 'string' && event.error) {
       throw new Error(event.error)
     }
-    
+
     if (typeof event.round === 'number' && event.left && event.right && event.hits) {
       rounds.push(event as TurnRound)
+      if (typeof event.narration === 'string' && event.narration) {
+        narrations.push(event.narration)
+      }
     }
-    
+
     if ('winnerId' in event && event.round === undefined) {
       setWinnerId(event.winnerId ?? null)
       sawWinner = true
     }
   }
 
-  if (nextText !== null) {
-    setText(nextText)
+  if (narrations.length > 0) {
+    setText(current => joinNarration(current, narrations))
   }
 
   if (rounds.length > 0) {
     setRounds(current => [...current, ...rounds])
   }
-  
+
   return sawWinner
+}
+
+function joinNarration(current: string, narrations: string[]): string {
+  const addition = narrations.join('\n\n')
+  if (!current) {
+    return addition
+  }
+  return `${current}\n\n${addition}`
 }

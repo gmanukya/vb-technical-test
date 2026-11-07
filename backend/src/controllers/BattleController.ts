@@ -1,5 +1,3 @@
-import { pipeline } from 'node:stream/promises'
-
 import { type Request, type Response, Router } from 'express'
 
 import { HttpError } from '../httpError'
@@ -8,7 +6,8 @@ import { battlePrompt } from '../services/battle/prompts'
 import { toFighter } from '../services/battle/fighters'
 import { runTurnBattle } from '../services/battle/turnBattle'
 import { fetchPokemonSummary } from '../services/pokeapi'
-import { completionError, streamCompletion } from '../services/virtualbrain/streamCompletion'
+import { CHATBOT_STREAM_IDLE_MS, readTextStream } from '../services/virtualbrain/readTextStream'
+import { completionError, openCompletionStream } from '../services/virtualbrain/streamCompletion'
 
 /** `POST /battles` streams a story. `POST /battles/turns` streams a round-by-round match. */
 const BattleController = Router()
@@ -26,8 +25,9 @@ BattleController.post('/', async (req: Request, res: Response) => {
 	const signal = abortWhenClosed(res)
 
 	try {
-		const upstream = await streamCompletion(battlePrompt([left, right]), signal)
+		const upstream = await openCompletionStream(battlePrompt([left, right]), signal)
 		const error = completionError(upstream.status)
+
 		if (error) {
 			upstream.stream.destroy()
 			throw error
@@ -36,16 +36,32 @@ BattleController.post('/', async (req: Request, res: Response) => {
 		res.status(200)
 		res.setHeader('Content-Type', 'text/plain; charset=utf-8')
 		res.setHeader('Cache-Control', 'no-cache')
-		await pipeline(upstream.stream, res, { signal })
+		res.flushHeaders()
+
+		await readTextStream(upstream.stream, {
+			idleMs: CHATBOT_STREAM_IDLE_MS,
+			onChunk(chunk) {
+				return writeChunk(res, chunk, signal)
+			},
+		})
+		if (!signal.aborted && !res.writableEnded) {
+			res.end()
+		}
 	} catch (error) {
-		if (signal.aborted || res.headersSent) {
+		if (signal.aborted) {
 			return
 		}
+
+		if (res.headersSent) {
+			res.destroy(error instanceof Error ? error : undefined)
+			return
+		}
+
 		throw error
 	}
 })
 
-/** Round-by-round battle. Each line is JSON. The chatbot only picks abilities. */
+/** Round-by-round battle. Each line is JSON. The chatbot writes the narration. */
 BattleController.post('/turns', async (req: Request, res: Response) => {
 	const ids = parseBattleIds(req.body)
 	const [left, right] = await Promise.all([
@@ -55,7 +71,7 @@ BattleController.post('/turns', async (req: Request, res: Response) => {
 	const signal = abortWhenClosed(res)
 
 	let started = false
-	const writeLine = (value: unknown) => {
+	const writeLine = async (value: unknown) => {
 		if (!started) {
 			res.status(200)
 			res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8')
@@ -63,32 +79,35 @@ BattleController.post('/turns', async (req: Request, res: Response) => {
 			res.flushHeaders()
 			started = true
 		}
-		res.write(`${JSON.stringify(value)}\n`)
+		await writeChunk(res, `${JSON.stringify(value)}\n`, signal)
 	}
 
 	try {
-		const winnerId = await runTurnBattle(toFighter(left), toFighter(right), signal, writeLine, (transcript) => {
-			writeLine({ text: transcript })
-		})
+		const winnerId = await runTurnBattle(toFighter(left), toFighter(right), signal, writeLine)
 
 		if (signal.aborted) {
 			return
 		}
 		
-		writeLine({ winnerId })
+		await writeLine({ winnerId })
 		res.end()
 	} catch (error) {
 		if (signal.aborted) {
 			return
 		}
+
 		if (!started) {
 			throw error
 		}
+		
 		let message = 'Battle service is unavailable'
+		
 		if (error instanceof HttpError) {
 			message = error.message
 		}
-		writeLine({ error: message })
+		
+		await writeLine({ error: message })
+		
 		if (!res.writableEnded) {
 			res.end()
 		}
@@ -97,12 +116,35 @@ BattleController.post('/turns', async (req: Request, res: Response) => {
 
 function abortWhenClosed(res: Response): AbortSignal {
 	const abort = new AbortController()
+
 	res.on('close', () => {
 		if (!res.writableFinished) {
 			abort.abort()
 		}
 	})
+	
 	return abort.signal
+}
+
+async function writeChunk(res: Response, chunk: string, signal: AbortSignal): Promise<void> {
+	if (signal.aborted || res.writableEnded) {
+		return
+	}
+	
+	if (res.write(chunk)) {
+		return
+	}
+
+	await new Promise<void>((resolve) => {
+		const done = () => {
+			res.off('drain', done)
+			res.off('close', done)
+			resolve()
+		}
+
+		res.once('drain', done)
+		res.once('close', done)
+	})
 }
 
 export { BattleController }

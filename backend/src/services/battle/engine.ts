@@ -16,7 +16,7 @@ export interface RoundHit {
 	targetHp: number
 }
 
-/** HP after one round. `winnerId` is null when nobody has fainted, or when both have. */
+/** HP after one round. `winnerId` is null when both fighters are still standing. */
 export interface RoundResult {
 	leftHp: number
 	rightHp: number
@@ -25,6 +25,9 @@ export interface RoundResult {
 }
 
 /**
+ * The chosen ability and the Pokémon's type do not change this number.
+ * That is on purpose, so the formula stays small. The ability is only the label the model picked.
+ *
  * One hit is Attack / (Attack + Defense), times 40% of max HP.
  * Clamped to 8–34% of max HP, and at least 1. Defense of 0 is treated as 1.
  * A fighter on full HP survives the hit, unless max HP is 1.
@@ -97,12 +100,8 @@ function strike(attacker: Combatant, defender: Combatant, move: string, defender
 	return targetHp
 }
 
-/** Both fighters at 0 HP is a draw. Otherwise the id still standing, or null when both remain. */
+/** The id still standing, or null when both remain. */
 function winner(leftId: number, rightId: number, leftHp: number, rightHp: number): number | null {
-	if (leftHp <= 0 && rightHp <= 0) {
-		return null
-	}
-
 	if (leftHp <= 0) {
 		return rightId
 	}

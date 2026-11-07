@@ -17,7 +17,7 @@ export interface ChatbotStream {
  * POST /v1/open-completion/{id}/query.
  * The body is chunked text/plain. A 401 retries once with a fresh access token.
  */
-export async function streamCompletion(query: string, signal: AbortSignal, sessionId?: string): Promise<ChatbotStream> {
+export async function openCompletionStream(query: string, signal: AbortSignal, sessionId?: string): Promise<ChatbotStream> {
 	const first = await requestCompletion(query, signal, sessionId)
 	if (first.status !== 401) {
 		return first
@@ -99,6 +99,6 @@ function sessionHeader(value: unknown): string | null {
 	if (raw !== undefined && isSessionId(raw)) {
 		return raw
 	}
-	
+
 	return null
 }

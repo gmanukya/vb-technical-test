@@ -40,11 +40,6 @@ export interface ApiType {
 		half_damage_from: NamedResource[]
 		no_damage_from: NamedResource[]
 	}
-	sprites?: {
-		'generation-viii'?: {
-			'sword-shield'?: { name_icon: string | null }
-		}
-	}
 }
 
 /** `GET /pokemon-species/:id`: generation, previous species, and evolution-chain URL. */

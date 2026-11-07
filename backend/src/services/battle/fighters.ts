@@ -1,6 +1,6 @@
 import type { PokemonSummary } from '../../types/pokemon'
 
-/** A Pokémon loaded for a turn battle. Choices are ability names from the card fetch. */
+/** A Pokémon loaded for a turn battle. Ability names from the card are only hit labels. */
 export interface Fighter {
 	id: number
 	name: string
